@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
+import { Api } from '../core/api';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { NAV } from '../nav';
 
@@ -20,7 +21,9 @@ import { NAV } from '../nav';
       <div class="main">
         <div class="topbar">
           <b>Mi negocio</b>
-          <span>🔔 &nbsp; Usuario</span>
+          <span [title]="api.online() ? 'Conectado a la API' : 'Sin conexión con la API: se usan los datos locales'">
+            {{ api.online() ? '🟢 API' : api.online() === false ? '🟠 Local' : '…' }} &nbsp; Usuario
+          </span>
         </div>
         <router-outlet />
       </div>
@@ -29,4 +32,6 @@ import { NAV } from '../nav';
 })
 export class ShellComponent {
   readonly nav = NAV;
+  readonly api = inject(Api);
+  constructor() { this.api.ping(); }
 }

@@ -65,7 +65,8 @@
               "buildTarget": "punto-de-venta:build:production"
             },
             "development": {
-              "buildTarget": "punto-de-venta:build:development"
+              "buildTarget": "punto-de-venta:build:development",
+            "proxyConfig": "proxy.conf.json"
             }
           },
           "defaultConfiguration": "development"
