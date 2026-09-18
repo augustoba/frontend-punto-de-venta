@@ -20,6 +20,7 @@ const BUILT: Record<string, () => Promise<any>> = {
   categorias: () => import('./pages/categorias/categorias.component').then((m) => m.CategoriasComponent),
   empleados: () => import('./pages/empleados/empleados.component').then((m) => m.EmpleadosComponent),
   horas: () => import('./pages/empleados/empleados.component').then((m) => m.EmpleadosComponent),
+  transferencias: () => import('./pages/transferencias/transferencias.component').then((m) => m.TransferenciasComponent),
   accesos: () => import('./pages/accesos/accesos.component').then((m) => m.AccesosComponent),
   ajustes: () => import('./pages/ajustes/ajustes.component').then((m) => m.AjustesComponent),
   clientes: () => import('./pages/partes/partes.component').then((m) => m.PartesComponent),
