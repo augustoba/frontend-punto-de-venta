@@ -13,9 +13,10 @@ export class Api {
   /** true si la API responde; alimenta el indicador del topbar. */
   readonly online = signal<boolean | null>(null);
 
-  private get<T>(url: string) { return firstValueFrom(this.http.get<T>(url)); }
-  private post<T>(url: string, body: unknown = {}) { return firstValueFrom(this.http.post<T>(url, body)); }
-  private put<T>(url: string, body: unknown) { return firstValueFrom(this.http.put<T>(url, body)); }
+  get<T = any>(url: string) { return firstValueFrom(this.http.get<T>(url)); }
+  post<T = any>(url: string, body: unknown = {}) { return firstValueFrom(this.http.post<T>(url, body)); }
+  put<T = any>(url: string, body: unknown = {}) { return firstValueFrom(this.http.put<T>(url, body)); }
+  del<T = any>(url: string) { return firstValueFrom(this.http.delete<T>(url)); }
 
   /** Consulta liviana para saber si el backend está arriba. */
   async ping(): Promise<boolean> {

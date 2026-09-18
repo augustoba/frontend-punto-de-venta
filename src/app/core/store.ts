@@ -1,4 +1,7 @@
-import { Injectable, computed, effect, signal } from '@angular/core';
+import { Injectable, Injector, computed, effect, inject, signal } from '@angular/core';
+import { Api } from './api';
+import { Remote } from './remote';
+import { REMOTE_OPS } from './remote-ops';
 import {
   Account, Allocation, Budget, BudgetLine, CashSession, Category, Cheque, CostCenter, Customer, Db, Employee,
   Iso, Movement, PartyEntry, PartyKind, PayMethod, Product, Purchase, PurchaseLine, Sale, SaleLine, Settings,
@@ -79,10 +82,47 @@ export interface SaleInput {
 export class Store {
   readonly db = signal<Db>(load());
 
+  private readonly injector = inject(Injector);
+  /** true cuando los datos vienen de pos-api y las escrituras van al servidor. */
+  readonly remote = signal(false);
+  /** Último error de negocio devuelto por la API (lo muestra el shell). */
+  readonly error = signal('');
+
   constructor() {
     effect(() => {
       try { localStorage.setItem(KEY, JSON.stringify(this.db())); } catch { /* sin storage */ }
     });
+    this.wrapRemoteOps();
+  }
+
+  /** Modo servidor: se activa con `localStorage['pos-use-api']='1'` y sólo si la API responde. */
+  async connect(): Promise<void> {
+    let wanted = false;
+    try { wanted = localStorage.getItem('pos-use-api') === '1'; } catch { /* sin storage */ }
+    if (!wanted) return;
+    try { await this.sync(); this.remote.set(true); } catch { this.remote.set(false); }
+  }
+
+  async sync(): Promise<void> {
+    const d = this.db();
+    this.db.set(await this.injector.get(Remote).load({ v: d.v, seq: d.seq, user: d.user }));
+  }
+
+  /** Cada método con operación remota se redirige a la API cuando `remote()` está activo. */
+  private wrapRemoteOps(): void {
+    const self = this as any;
+    for (const name of Object.keys(REMOTE_OPS)) {
+      const local = self[name];
+      if (typeof local !== 'function') continue;
+      self[name] = (...args: unknown[]) => {
+        if (!this.remote()) return local.apply(this, args);
+        this.error.set('');
+        REMOTE_OPS[name](this.injector.get(Api), this.db(), ...args)
+          .then(() => this.sync())
+          .catch((e) => this.error.set(e?.error?.error ?? e?.message ?? 'No se pudo completar la operación'));
+        return name.startsWith('save') && local.length !== undefined ? '' : undefined;
+      };
+    }
   }
 
   // ---------- utilidades ----------

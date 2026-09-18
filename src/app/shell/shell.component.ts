@@ -1,5 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { Api } from '../core/api';
+import { Store } from '../core/store';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { NAV } from '../nav';
 
@@ -25,6 +26,11 @@ import { NAV } from '../nav';
             {{ api.online() ? '🟢 API' : api.online() === false ? '🟠 Local' : '…' }} &nbsp; Usuario
           </span>
         </div>
+        @if (store.error()) {
+          <div class="alert" style="margin:10px 20px;padding:10px 14px;border-radius:10px;background:#fde8e8;color:#8a1c1c">
+            {{ store.error() }} <button (click)="store.error.set('')" style="float:right;border:0;background:none;cursor:pointer">✕</button>
+          </div>
+        }
         <router-outlet />
       </div>
     </div>
@@ -33,5 +39,6 @@ import { NAV } from '../nav';
 export class ShellComponent {
   readonly nav = NAV;
   readonly api = inject(Api);
-  constructor() { this.api.ping(); }
+  readonly store = inject(Store);
+  constructor() { this.api.ping().then(() => this.store.connect()); }
 }
