@@ -1,5 +1,6 @@
 import { Api } from './api';
 import { Db } from './models';
+import { METHOD_TO_API, mapSale } from './mappers';
 
 /**
  * Operaciones de escritura del store contra pos-api. El nombre de cada una coincide con el método del `Store`
@@ -9,6 +10,8 @@ import { Db } from './models';
 export type Op = (api: Api, db: Db, ...args: any[]) => Promise<unknown>;
 const n = (v: string | null | undefined): number | null => (v === null || v === undefined || v === '' ? null : Number(v));
 const put = (api: Api, url: string, body: unknown) => api.put(url, body);
+const day = (iso: string) => String(iso ?? '').slice(0, 10);
+const up = (v: string) => String(v).toUpperCase();
 
 const categoryBody = (db: Db, id: string, patch: { name?: string; emoji?: string; color?: string; subs?: string[] }) => {
   const c = db.categories.find((x) => x.id === id)!;
@@ -61,6 +64,65 @@ export const REMOTE_OPS: Record<string, Op> = {
   supplierMovement: (api, _db, id: string, kind: string, amount: number, accountId: string | null, comment: string) =>
     api.post(`/api/suppliers/${id}/movements`, { kind, amount, accountId: n(accountId), comment }),
 
+  // ----- caja y ventas -----
+  openCash: (api, _db, accountId: string, balance: number, notes: string) => api.post('/api/cash/open', { accountId: n(accountId), balance, notes }),
+  closeCash: (api, _db, real: number, notes: string) => api.post('/api/cash/close', { real, notes }),
+  setSessionVerified: (api, _db, id: string, verified: boolean) => put(api, `/api/cash/sessions/${id}/verified`, { verified }),
+  setSessionNote: (api, _db, id: string, note: string) => put(api, `/api/cash/sessions/${id}/note`, { note }),
+  registerSale: (api, _db, i) => api.post('/api/sales', {
+    customerId: n(i.customerId), lines: i.lines.map((l: any) => ({ productId: Number(l.productId), qty: l.qty, price: l.price ?? null, discountUnit: l.discountUnit ?? null })),
+    discountPct: i.discountPct, method: METHOD_TO_API[i.method as keyof typeof METHOD_TO_API], paid: i.paid, notes: i.notes, invoice: i.invoice,
+    budgetId: n(i.budgetId), autoDiscount: i.autoDiscount ?? null,
+  }),
+  deleteSale: (api, _db, id: string) => api.del(`/api/sales/${id}`),
+  createInvoice: (api, _db, customerId: string | null, items: string, total: number, ivaRate = 21) => api.post('/api/invoices', { customerId: n(customerId), items, total, ivaRate }),
+
+  // ----- compras -----
+  savePurchase: (api, _db, id: string | null, supplierId: string, lines: any[], name: string) => {
+    const body = { supplierId: n(supplierId), lines: lines.map((l) => ({ productId: Number(l.productId), qty: l.qty, cost: l.cost })), name };
+    return id ? put(api, `/api/purchases/${id}`, body) : api.post('/api/purchases', body);
+  },
+  markOrdered: (api, _db, id: string) => api.post(`/api/purchases/${id}/order`),
+  receivePurchase: (api, _db, id: string, paid: boolean, accountId: string | null) => api.post(`/api/purchases/${id}/receive`, { paid, accountId: n(accountId) }),
+  deletePurchase: (api, _db, id: string) => api.del(`/api/purchases/${id}`),
+
+  // ----- presupuestos, cheques, centros de costos -----
+  saveBudget: (api, _db, id: string | null, customerId: string | null, expires: string, lines: any[], notes: string) => {
+    const body = { customerId: n(customerId), expires: day(expires), lines: lines.map((l) => ({ productId: Number(l.productId), name: l.name, qty: l.qty, price: l.price })), notes };
+    return id ? put(api, `/api/budgets/${id}`, body) : api.post('/api/budgets', body);
+  },
+  setBudgetStatus: (api, _db, id: string, status: string) => put(api, `/api/budgets/${id}/status`, { status: up(status) }),
+  deleteBudget: (api, _db, id: string) => api.del(`/api/budgets/${id}`),
+  saveCheque: async (api, _db, c) => {
+    const body = { kind: up(c.kind), amount: c.amount, due: day(c.due), customerId: n(c.customerId), description: c.description ?? '' };
+    const saved = c.id ? await put(api, `/api/cheques/${c.id}`, body) : await api.post('/api/cheques', body);
+    if (c.collected !== undefined && saved?.id) await put(api, `/api/cheques/${saved.id}/collected`, { collected: !!c.collected });
+    return saved;
+  },
+  deleteCheque: (api, _db, id: string) => api.del(`/api/cheques/${id}`),
+  saveCostCenter: (api, _db, name: string, allocation: string) => api.post('/api/cost-centers', { name, allocation: up(allocation) }),
+  deleteCostCenter: (api, _db, id: string) => api.del(`/api/cost-centers/${id}`),
+  addFixedCost: (api, _db, centerId: string, name: string, monthly: number, notes: string) => api.post(`/api/cost-centers/${centerId}/costs`, { name, monthly, notes }),
+  deleteFixedCost: (api, db, centerId: string, id: string) => {
+    const idx = db.costCenters.find((c) => c.id === centerId)?.costs.findIndex((f) => f.id === id) ?? -1;
+    return idx < 0 ? Promise.resolve() : api.del(`/api/cost-centers/${centerId}/costs/${idx}`);
+  },
+
+  // ----- personal -----
+  addEmployee: (api, _db, e) => api.post('/api/employees', { name: e.name, lastName: e.lastName, email: e.email, role: up(e.role), hired: day(e.hired) }),
+  addShift: (api, _db, employeeId: string, date: string, from: string, to: string, notes: string) =>
+    api.post('/api/shifts', { employeeId: n(employeeId), day: date, clockIn: from, clockOut: to, notes }),
+
   // ----- ajustes -----
   updateSettings: (api, db, patch) => put(api, '/api/settings', { ...db.settings, ...patch }),
+};
+
+/** Métodos del store que devuelven algo (id nuevo o la venta): en modo servidor devuelven una promesa con este resultado. */
+export const REMOTE_RESULT: Record<string, (response: any, args: any[]) => unknown> = {
+  saveProduct: (r, a) => String(r?.id ?? a[0]?.id ?? ''),
+  saveCustomer: (r, a) => String(r?.id ?? a[0]?.id ?? ''),
+  saveSupplier: (r, a) => String(r?.id ?? a[0]?.id ?? ''),
+  savePurchase: (r) => String(r?.id ?? ''),
+  saveBudget: (r) => String(r?.id ?? ''),
+  registerSale: (r) => mapSale(r),
 };

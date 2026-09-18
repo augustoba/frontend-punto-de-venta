@@ -287,9 +287,11 @@ export class CajaComponent implements OnInit {
   }
   aplicarLinea() { const d = this.lineaDesc(); this.cart.update((c) => c.map((l, k) => (k === d.i ? { ...l, discountUnit: Math.max(0, r2(d.monto)) } : l))); this.lineaDesc.set(null); }
   rapidoOpen() { this.rapido.set({ name: '', price: 0, cost: 0 }); }
-  crearRapido(r: any) {
-    const id = this.store.saveProduct({ name: r.name.trim(), price: +r.price || 0, cost: +r.cost || 0 }, 0);
-    const p = this.store.product(id)!; this.rapido.set(null); this.agregar(p);
+  async crearRapido(r: any) {
+    try {
+      const id = await this.store.saveProduct({ name: r.name.trim(), price: +r.price || 0, cost: +r.cost || 0 }, 0);
+      const p = this.store.product(id)!; this.rapido.set(null); this.agregar(p);
+    } catch (e: any) { this.error.set(e.message ?? 'No se pudo crear el producto'); }
   }
 
   // cobro
@@ -302,13 +304,16 @@ export class CajaComponent implements OnInit {
     if (v === '__nuevo') { this.nuevoCliente.set(true); return; }
     c.customerId = v; this.nuevoCliente.set(false);
   }
-  crearCliente() { const id = this.store.saveCustomer({ name: this.nuevoNombre.trim() }); this.cobro().customerId = id; this.nuevoCliente.set(false); this.nuevoNombre = ''; }
+  async crearCliente() {
+    try { const id = await this.store.saveCustomer({ name: this.nuevoNombre.trim() }); this.cobro().customerId = id; this.nuevoCliente.set(false); this.nuevoNombre = ''; }
+    catch (e: any) { this.error.set(e.message ?? 'No se pudo crear el cliente'); }
+  }
   togglePago(c: any) { c.paid = !c.paid; }
   autoPct(c: any): number { const s = this.store.settings(); return c.method === 'Transferencia' && c.paid && s.transferDiscount > 0 ? s.transferDiscount : 0; }
   totalCobro(c: any): number { const pct = Math.max(c.discountPct, this.autoPct(c)); return r2(this.subtotal() * (1 - pct / 100)); }
-  guardar(c: any) {
+  async guardar(c: any) {
     try {
-      const s = this.store.registerSale({
+      const s = await this.store.registerSale({
         customerId: c.customerId, lines: this.cart().map((l) => ({ productId: l.productId, qty: l.qty, price: l.price, discountUnit: l.discountUnit })),
         discountPct: c.discountPct, method: c.method, paid: c.paid, notes: c.notes, invoice: c.invoice, budgetId: this.budgetId,
       });

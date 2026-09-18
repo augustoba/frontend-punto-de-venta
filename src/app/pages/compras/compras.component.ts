@@ -151,14 +151,14 @@ export class ComprasComponent {
   }
   enPedido(id: string) { return this.lineas.some((l) => l.productId === id); }
   agregar(id: string) { const p = this.store.product(id)!; this.lineas.push({ productId: id, name: p.name, qty: 1, cost: p.cost, prevCost: p.cost, received: 0 }); }
-  crearProd() { const id = this.store.saveProduct({ name: this.pn.name.trim(), cost: +this.pn.cost || 0, price: +this.pn.price || 0, supplierId: this.provId }, 0); this.agregar(id); this.pn = { name: '', cost: 0, price: 0 }; this.prodNuevo = false; }
+  async crearProd() { let id = ''; try { id = await this.store.saveProduct({ name: this.pn.name.trim(), cost: +this.pn.cost || 0, price: +this.pn.price || 0, supplierId: this.provId }, 0); } catch { return; } this.agregar(id); this.pn = { name: '', cost: 0, price: 0 }; this.prodNuevo = false; }
   variacion(l: PurchaseLine) { if (!l.prevCost || l.cost === l.prevCost) return 'Sin cambios · ' + this.fmt(l.prevCost); const p = ((l.cost - l.prevCost) / l.prevCost) * 100; return `${this.fmt(l.prevCost)} → ${this.fmt(l.cost)} ${p > 0 ? '+' : ''}${p.toFixed(2)}%`; }
   private fmt(n: number) { return '$ ' + n.toLocaleString('es-AR'); }
   hayVariacion() { return this.lineas.some((l) => l.prevCost && l.cost !== l.prevCost); }
   totalLineas() { return r2(this.lineas.reduce((s, l) => s + l.qty * l.cost, 0)); }
   unidades() { return this.lineas.reduce((s, l) => s + l.qty, 0); }
 
-  guardarBorrador() { const id = this.store.savePurchase(this.editId, this.provId, this.lineas.map((l) => ({ ...l })), this.nombrePedido); this.abrir(id); }
+  async guardarBorrador() { const id = await this.store.savePurchase(this.editId, this.provId, this.lineas.map((l) => ({ ...l })), this.nombrePedido); this.abrir(id); }
   texto(): string {
     return `Pedido a ${this.store.supplier(this.provId)?.name}\n` + this.lineas.map((l) => `${l.qty} x ${l.name} — $${l.cost} c/u`).join('\n') + `\nTotal: $${this.totalLineas()}`;
   }

@@ -15,7 +15,7 @@ describe('mappers del servidor', () => {
     expect(mapCategory({ id: 1, name: 'Ventas', subcategories: ['Ventas del local'] }).subs).toEqual([{ id: 'Ventas del local', name: 'Ventas del local' }]);
   });
   it('producto: combo, ids nulos y números', () => {
-    const p = mapProduct({ id: 9, name: 'Combo', categoryId: null, supplierId: 4, price: 100, iva: 21, stock: -2, combo: [{ productId: 5, qty: 2 }] });
+    const p = mapProduct({ id: 9, name: 'Combo', categoryId: null, supplierId: 4, price: 100, iva: 21, stock: -2, combo: true, components: [{ productId: 5, qty: 2 }] });
     expect(p.categoryId).toBeNull();
     expect(p.supplierId).toBe('4');
     expect(p.stock).toBe(-2);

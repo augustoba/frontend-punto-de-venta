@@ -1,7 +1,7 @@
 import { Injectable, Injector, computed, effect, inject, signal } from '@angular/core';
 import { Api } from './api';
 import { Remote } from './remote';
-import { REMOTE_OPS } from './remote-ops';
+import { REMOTE_OPS, REMOTE_RESULT } from './remote-ops';
 import {
   Account, Allocation, Budget, BudgetLine, CashSession, Category, Cheque, CostCenter, Customer, Db, Employee,
   Iso, Movement, PartyEntry, PartyKind, PayMethod, Product, Purchase, PurchaseLine, Sale, SaleLine, Settings,
@@ -117,10 +117,13 @@ export class Store {
       self[name] = (...args: unknown[]) => {
         if (!this.remote()) return local.apply(this, args);
         this.error.set('');
-        REMOTE_OPS[name](this.injector.get(Api), this.db(), ...args)
-          .then(() => this.sync())
-          .catch((e) => this.error.set(e?.error?.error ?? e?.message ?? 'No se pudo completar la operación'));
-        return name.startsWith('save') && local.length !== undefined ? '' : undefined;
+        const run = REMOTE_OPS[name](this.injector.get(Api), this.db(), ...args).then(async (r) => { await this.sync(); return r; });
+        const fail = (e: any): never => { const m = e?.error?.error ?? e?.message ?? 'No se pudo completar la operación'; this.error.set(m); throw new Error(m); };
+        const result = REMOTE_RESULT[name];
+        // Con resultado (id nuevo / venta): promesa que la pantalla espera. Sin resultado: se ejecuta y el error queda en el aviso.
+        if (result) return run.then((r) => result(r, args as any[])).catch(fail);
+        run.catch((e) => { try { fail(e); } catch { /* ya quedó en error() */ } });
+        return undefined;
       };
     }
   }

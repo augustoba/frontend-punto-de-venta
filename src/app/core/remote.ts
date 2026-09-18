@@ -13,6 +13,12 @@ export class Remote {
   private readonly http = inject(HttpClient);
   private get<T = any[]>(url: string): Promise<T> { return firstValueFrom(this.http.get<T>(url)); }
 
+  /** El servidor lista los cheques por tipo: se piden los dos. */
+  private async chequesAll(): Promise<any[]> {
+    const [cobrar, pagar] = await Promise.all([this.get('/api/cheques?kind=COBRAR'), this.get('/api/cheques?kind=PAGAR')]);
+    return [...cobrar, ...pagar];
+  }
+
   /** Devuelve el Db completo desde el servidor, o lanza si la API no responde. */
   async load(base: Pick<Db, 'v' | 'seq' | 'user'>): Promise<Db> {
     const [accounts, movements, categories, products, stockMoves, priceChanges, customers, suppliers, sales, sessions, purchases, budgets, invoices, cheques, costCenters, employees, shifts, settings] =
@@ -20,7 +26,7 @@ export class Remote {
         this.get('/api/accounts'), this.get('/api/movements'), this.get('/api/categories'), this.get('/api/products'),
         this.get('/api/stock-moves'), this.get('/api/price-changes'), this.get('/api/customers'), this.get('/api/suppliers'),
         this.get('/api/sales'), this.get('/api/cash/sessions'), this.get('/api/purchases'), this.get('/api/budgets'),
-        this.get('/api/invoices'), this.get('/api/cheques'), this.get('/api/cost-centers'), this.get('/api/employees'),
+        this.get('/api/invoices'), this.chequesAll(), this.get('/api/cost-centers'), this.get('/api/employees'),
         this.get('/api/shifts'), this.get<any>('/api/settings'),
       ]);
     const custList = customers.map(mapCustomer), suppList = suppliers.map(mapSupplier);
