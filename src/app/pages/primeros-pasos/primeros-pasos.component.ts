@@ -1,6 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Onboarding } from '../../core/onboarding';
+import { reiniciarGuias } from '../../core/guias';
 
 /** Primeros pasos: asistente de puesta en marcha con avance (2 esenciales + 3 recomendados). */
 @Component({
@@ -32,11 +33,14 @@ import { Onboarding } from '../../core/onboarding';
           </a>
         }
       </div>
+      <p style="margin-top: 22px"><button (click)="verGuias()"><i class="fa-solid fa-rotate-left"></i>Ver de nuevo las guías de cada pantalla</button>@if (reiniciado) { <small class="muted" style="margin-left: 10px">Listo: van a aparecer otra vez al entrar a cada pantalla.</small> }</p>
     </div>
   `,
 })
 export class PrimerosPasosComponent {
   readonly ob = inject(Onboarding);
+  reiniciado = false;
+  verGuias() { reiniciarGuias(); this.reiniciado = true; }
   resto() { return this.ob.tareas().filter((t) => !t.esencial); }
   alTocar(id: string) { if (id === 'pos') this.ob.marcarPosConfigurado(); }
 }

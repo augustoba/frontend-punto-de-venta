@@ -6,6 +6,8 @@ import { Auth } from '../core/auth';
 import { Store } from '../core/store';
 import { Onboarding } from '../core/onboarding';
 import { NAV, NavItem } from '../nav';
+import { TourComponent, TourStep } from '../shared/tour.component';
+import { GUIAS, guiaVista, marcarGuiaVista } from '../core/guias';
 
 /** Un renglón del menú: un ítem suelto o un grupo desplegable (Historial, Empleados, Listas y catálogos). */
 type Entry = { kind: 'item'; item: NavItem } | { kind: 'group'; group: string; icon: string; items: NavItem[] };
@@ -18,7 +20,7 @@ function leerColapsado(): boolean { try { return localStorage.getItem(KEY_COLAPS
 /** Marco del panel: sidebar agrupado y colapsable + topbar + pie (réplica del layout de Envi). */
 @Component({
   selector: 'app-shell',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, TourComponent],
   template: `
     <div class="animated-bg" aria-hidden="true"><i></i><i></i><i></i></div>
     <div class="app" [class.collapsed]="colapsado()">
@@ -71,7 +73,8 @@ function leerColapsado(): boolean { try { return localStorage.getItem(KEY_COLAPS
         <router-outlet />
       </div>
     </div>
-    <a class="ayuda-fab" routerLink="/primeros-pasos" title="Ayuda: primeros pasos" aria-label="Ayuda"><i class="fa-solid fa-life-ring"></i></a>
+    @if (guia(); as g) { <app-tour [steps]="g" (closed)="cerrarGuia()" /> }
+    <button class="ayuda-fab" style="border: 0" (click)="abrirGuia()" title="Ayuda: guía de esta pantalla" aria-label="Ayuda"><i class="fa-solid fa-life-ring"></i></button>
     <footer class="foot"><span>{{ anio }} © Todos los derechos reservados</span><span>·</span><span>{{ store.settings().businessName || 'Punto de venta' }}</span></footer>
   `,
 })
@@ -98,9 +101,21 @@ export class ShellComponent {
     return { title: g.title, entries };
   });
 
+  readonly guia = signal<TourStep[] | null>(null);
+  private ruta = '';
+  private claveActual() { return this.url().split('?')[0].replace(/^\//, ''); }
+  cerrarGuia() { marcarGuiaVista(this.ruta); this.guia.set(null); }
+  /** Botón de ayuda: repite la guía de la pantalla; si no tiene, lleva a Primeros pasos. */
+  abrirGuia() { const k = this.claveActual(); this.ruta = k; if (GUIAS[k]) this.guia.set(GUIAS[k]); else this.router.navigateByUrl('/primeros-pasos'); }
+
   constructor() {
     effect(() => document.documentElement.style.setProperty('--biz', this.store.settings().businessColor || '#eeb37a'));
-    this.router.events.pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd)).subscribe((e) => this.url.set(e.urlAfterRedirects));
+    this.router.events.pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd)).subscribe((e) => {
+      this.url.set(e.urlAfterRedirects);
+      const k = this.claveActual(); this.ruta = k; this.guia.set(null);
+      // Primera visita a la pantalla: aparece la guía (una sola vez).
+      if (GUIAS[k] && !guiaVista(k)) setTimeout(() => { if (this.claveActual() === k) this.guia.set(GUIAS[k]); }, 700);
+    });
   }
 
   /** Un grupo está abierto si el usuario lo abrió o si la pantalla actual es una de sus hijas. */
