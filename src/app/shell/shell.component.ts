@@ -40,5 +40,4 @@ export class ShellComponent {
   readonly nav = NAV;
   readonly api = inject(Api);
   readonly store = inject(Store);
-  constructor() { this.api.ping().then(() => this.store.connect()); }
 }

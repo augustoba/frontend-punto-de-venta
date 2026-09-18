@@ -1,4 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
+import { Api } from './core/api';
+import { Store } from './core/store';
 import { RouterOutlet } from '@angular/router';
 
 @Component({
@@ -9,4 +11,8 @@ import { RouterOutlet } from '@angular/router';
 })
 export class AppComponent {
   title = 'punto-de-venta';
+  private readonly api = inject(Api);
+  private readonly store = inject(Store);
+  /** Se conecta acá (y no en el shell) para que también valga en /caja, que va fuera del shell. */
+  constructor() { this.api.ping().then(() => this.store.connect()); }
 }
