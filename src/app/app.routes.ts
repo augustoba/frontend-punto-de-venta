@@ -9,6 +9,7 @@ const BUILT: Record<string, () => Promise<any>> = {
   stock: () => import('./pages/stock/stock.component').then((m) => m.StockComponent),
   cuentas: () => import('./pages/cuentas/cuentas.component').then((m) => m.CuentasComponent),
   'cierres-caja': () => import('./pages/cierres/cierres.component').then((m) => m.CierresComponent),
+  compras: () => import('./pages/compras/compras.component').then((m) => m.ComprasComponent),
   clientes: () => import('./pages/partes/partes.component').then((m) => m.PartesComponent),
   proveedores: () => import('./pages/partes/partes.component').then((m) => m.PartesComponent),
 };
