@@ -2,7 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { ModalComponent } from '../../shared/modal.component';
-import { FdatePipe, MoneyPipe } from '../../shared/format';
+import { FdatePipe, MoneyPipe, FtimePipe, AvcolorPipe } from '../../shared/format';
 import { Store, r2 } from '../../core/store';
 import { PartyKind } from '../../core/models';
 
@@ -31,33 +31,41 @@ const CHIP: Record<string, [string, string]> = {
 /** Clientes y proveedores con cuenta corriente (réplica de Envi). Ver referencia-envi/ANALISIS_cuentas_corrientes.md */
 @Component({
   selector: 'app-partes',
-  imports: [FormsModule, ModalComponent, MoneyPipe, FdatePipe],
+  imports: [FormsModule, ModalComponent, MoneyPipe, FdatePipe, FtimePipe, AvcolorPipe],
   template: `
     @if (!sel()) {
       <h1>{{ es() ? 'Clientes' : 'Proveedores' }}</h1>
       <p class="sub">{{ es() ? 'Gestioná tus clientes, sus datos y sus deudas.' : 'Controlá quién te abastece, cuánto le debés y cómo viene cada cuenta corriente.' }}</p>
       <div class="kpis k3">
-        <div class="kpi"><small>{{ es() ? 'Clientes' : 'Proveedores activos' }}</small><strong>{{ lista().length }}</strong></div>
-        <div class="kpi"><small>{{ es() ? 'Saldo a cobrar' : 'Saldo adeudado' }}</small><strong>{{ total() | money }}</strong></div>
-        <div class="kpi"><small>Estado de las cuentas</small>
+        <div class="kpi" [class.ic-users]="es()" [class.ic-truck]="!es()"><small>{{ es() ? 'Clientes' : 'Proveedores activos' }}</small><strong>{{ lista().length }}</strong></div>
+        <div class="kpi" [class.ic-dollar]="es()" [class.ic-card]="!es()"><small>{{ es() ? 'Saldo a cobrar' : 'Saldo adeudado' }}</small><strong>{{ total() | money }}</strong></div>
+        <div class="kpi"><small>{{ es() ? 'Estado de las cuentas' : 'Estado de las cuentas corrientes' }} <span style="float: right">{{ lista().length }} {{ lista().length === 1 ? 'CUENTA' : 'CUENTAS' }}</span></small>
           <div class="bar"><i [style.flex]="alDia()" style="background: var(--success)"></i><i [style.flex]="conDeuda()" style="background: var(--danger)"></i></div>
-          <span class="muted">Al día {{ alDia() }} · {{ es() ? 'Saldo a cobrar' : 'Saldo a pagar' }} {{ conDeuda() }}</span></div>
+          <div class="legend"><span><i class="dot" style="background: var(--success)"></i>Al día {{ pcp(alDia()) }}%</span><span><i class="dot" style="background: var(--danger)"></i>{{ es() ? 'Saldo a cobrar' : 'Saldo a pagar' }} {{ pcp(conDeuda()) }}%</span></div></div>
       </div>
       <div class="toolbar">
-        <input class="search" placeholder="Buscar..." style="width: 270px" [ngModel]="q()" (ngModelChange)="q.set($event)" /><span class="sp"></span>
-        <button (click)="mov(null)">⇄ Registrar movimiento</button>
-        <button class="cta" (click)="nuevo()">{{ es() ? 'Nuevo cliente' : 'Crear proveedor' }}</button>
+        <input class="search" [placeholder]="es() ? 'Buscar...' : 'Buscar proveedor, CUIT o contacto'" [ngModel]="q()" (ngModelChange)="q.set($event)" />
+        <button><i class="fa-solid fa-filter"></i>Filtrar</button><span class="sp"></span>
+        <button class="iconbtn" (click)="refrescar()" title="Actualizar"><i class="fa-solid fa-rotate-right"></i></button>
+        <button class="iconbtn" (click)="exportar()" title="Exportar CSV"><i class="fa-solid fa-download"></i></button>
+        <button (click)="mov(null)"><i class="fa-solid fa-right-left"></i>Registrar movimiento</button>
+        <button class="cta" (click)="nuevo()"><i class="fa-solid fa-plus"></i>{{ es() ? 'Nuevo cliente' : 'Crear proveedor' }}</button>
       </div>
       <table>
-        <tr><th>{{ es() ? 'Cliente' : 'Proveedor' }}</th><th>Contacto</th><th class="right">Cuenta corriente</th></tr>
+        <tr>@if (!es()) { <th>Fecha</th> }<th>{{ es() ? 'Cliente' : 'Proveedor' }}</th>@if (!es()) { <th>Rubro</th> }<th>Contacto</th><th class="right">Cuenta corriente</th><th></th></tr>
         @for (p of filtrada(); track p.id) {
           <tr style="cursor: pointer" (click)="sel.set(p.id)">
-            <td><span class="av" [style.background]="'var(--avatar-blue)'">{{ nombre(p)[0] }}</span><b>{{ nombre(p) }}</b></td>
-            <td>{{ $any(p).email || $any(p).phone || $any(p).contact }}</td>
-            <td class="right" [class]="saldo(p.id) > 0 ? 'right neg' : 'right pos'">{{ saldo(p.id) | money }}</td>
+            @if (!es()) { <td><b>{{ p.createdAt | fdate }}</b><br /><small class="muted">{{ p.createdAt | ftime }}</small></td> }
+            <td><span class="av round" [style.background]="nombre(p) | avcolor">{{ iniciales(p) }}</span><b>{{ nombre(p) }}</b> <i class="fa-solid fa-chevron-right" style="font-size: 9px; margin: 0"></i></td>
+            @if (!es()) { <td class="muted">{{ $any(p).trade || '—' }}</td> }
+            <td>@if (es()) { {{ $any(p).email || $any(p).phone }} } @else { <b>{{ $any(p).contact || '—' }}</b><br /><small class="muted">{{ $any(p).phone }}</small> }</td>
+            <td class="right"><span class="spill" [class.debt]="saldo(p.id) > 0"><i class="fa-solid fa-circle"></i>{{ saldo(p.id) | money }}</span>
+              <button class="round" (click)="$event.stopPropagation(); mov(p.id)" title="Registrar movimiento"><i class="fa-solid fa-right-left"></i></button></td>
+            <td class="right"><i class="fa-solid fa-ellipsis-vertical" style="margin: 0; color: var(--text-soft)"></i></td>
           </tr>
-        } @empty { <tr><td colspan="3" class="empty">Todavía no hay {{ es() ? 'clientes' : 'proveedores' }}.</td></tr> }
+        } @empty { <tr><td [attr.colspan]="es() ? 4 : 6" class="empty">Todavía no hay {{ es() ? 'clientes' : 'proveedores' }}.</td></tr> }
       </table>
+      <div class="pager"><span>Mostrando {{ filtrada().length ? '1–' + filtrada().length : 0 }} de {{ lista().length }}</span></div>
     } @else {
       @if (ficha(); as f) {
         <div class="row" style="margin-bottom: 8px"><button (click)="sel.set('')">‹ Volver</button><span class="grow"></span><button class="cta" (click)="editar(f)">✎ Editar</button></div>
@@ -108,6 +116,14 @@ const CHIP: Record<string, [string, string]> = {
   `,
 })
 export class PartesComponent {
+  pcp(n: number): number { const total = this.alDia() + this.conDeuda(); return total ? Math.round((n / total) * 100) : 0; }
+  iniciales(p: any): string { const n = String(this.nombre(p) ?? '?').trim(); const w = n.split(/\s+/); return this.es() ? n[0] : (w.length > 1 ? w[0][0] + w[1][0] : n.slice(0, 2)).toUpperCase(); }
+  refrescar() { if (this.store.remote()) this.store.sync(); }
+  exportar() {
+    const filas = [['Nombre', 'Contacto', 'Saldo'], ...this.filtrada().map((p: any) => [this.nombre(p), p.email || p.phone || p.contact || '', this.saldo(p.id)])];
+    const url = URL.createObjectURL(new Blob([filas.map((r) => r.join(';')).join('\n')], { type: 'text/csv' }));
+    const a = document.createElement('a'); a.href = url; a.download = this.es() ? 'clientes.csv' : 'proveedores.csv'; a.click(); URL.revokeObjectURL(url);
+  }
   readonly store = inject(Store);
   private readonly route = inject(ActivatedRoute);
   readonly kind: PartyKind = this.route.snapshot.routeConfig?.path === 'proveedores' ? 'supplier' : 'customer';
