@@ -3,7 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { Db } from './models';
 import {
-  mapAccount, mapBudget, mapCategory, mapCheque, mapCostCenter, mapCustomer, mapEmployee, mapInvoice, mapMovement, mapPartyEntry,
+  mapAccount, mapBudget, mapCategory, mapCheque, mapCostCenter, mapCustomer, mapEmployee, mapInvoice, mapMovement, mapLedgerRow,
   mapPriceChange, mapProduct, mapPurchase, mapSale, mapSession, mapSettings, mapShift, mapStockMove, mapSupplier,
 } from './mappers';
 
@@ -32,8 +32,8 @@ export class Remote {
     const custList = customers.map(mapCustomer), suppList = suppliers.map(mapSupplier);
     // La cuenta corriente sólo se expone por persona: se piden los libros en paralelo.
     const ledgers = await Promise.all([
-      ...custList.map((c) => this.get(`/api/customers/${c.id}/ledger`).then((r) => r.map(mapPartyEntry))),
-      ...suppList.map((s) => this.get(`/api/suppliers/${s.id}/ledger`).then((r) => r.map(mapPartyEntry))),
+      ...custList.map((c) => this.get(`/api/customers/${c.id}/ledger`).then((r) => r.map(mapLedgerRow))),
+      ...suppList.map((s) => this.get(`/api/suppliers/${s.id}/ledger`).then((r) => r.map(mapLedgerRow))),
     ]);
     return {
       ...base,

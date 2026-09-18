@@ -1,4 +1,4 @@
-import { mapAccount, mapCategory, mapMovement, mapPartyEntry, mapProduct, mapSale, mapShift, mapPurchase, mapCheque } from './mappers';
+import { mapAccount, mapLedgerRow, mapCategory, mapMovement, mapPartyEntry, mapProduct, mapSale, mapShift, mapPurchase, mapCheque } from './mappers';
 
 describe('mappers del servidor', () => {
   it('cuenta: id como texto y tipo en minúscula', () => {
@@ -38,5 +38,11 @@ describe('mappers del servidor', () => {
   it('compra y cheque: estados en minúscula', () => {
     expect(mapPurchase({ id: 1, supplierId: 3, status: 'RECIBIDO', lines: [] }).status).toBe('recibido');
     expect(mapCheque({ id: 1, kind: 'COBRAR', amount: 10 }).kind).toBe('cobrar');
+  });
+  it('libro de cuenta corriente: abre el envoltorio {entry, balance}', () => {
+    const e = mapLedgerRow({ entry: { id: 2, party: 'CUSTOMER', partyId: 1, occurredAt: 'x', kind: 'pago', delta: '-300', accountId: 1 }, balance: '700' });
+    expect(e.delta).toBe(-300);
+    expect(e.partyId).toBe('1');
+    expect(mapLedgerRow({ id: 3, party: 'SUPPLIER', partyId: 9, delta: 5, kind: 'compra' }).party).toBe('supplier');
   });
 });

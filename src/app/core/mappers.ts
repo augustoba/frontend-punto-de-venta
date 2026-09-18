@@ -55,6 +55,9 @@ export const mapPartyEntry = (e: any): PartyEntry => ({
   kind: e.kind, delta: num(e.delta), accountId: id(e.accountId), comment: e.comment ?? '', ref: e.ref ?? '', user: e.username ?? '',
 });
 
+/** El servidor devuelve cada fila del libro como `{ entry, balance }` (saldo corrido); el front recalcula el saldo. */
+export const mapLedgerRow = (r: any): PartyEntry => mapPartyEntry(r?.entry ?? r);
+
 const METHODS: Record<string, PayMethod> = { EFECTIVO: 'Efectivo', TRANSFERENCIA: 'Transferencia', TARJETA: 'Tarjeta', CUENTA_CORRIENTE: 'Cuenta corriente' };
 export const METHOD_TO_API: Record<PayMethod, string> = { 'Efectivo': 'EFECTIVO', 'Transferencia': 'TRANSFERENCIA', 'Tarjeta': 'TARJETA', 'Cuenta corriente': 'CUENTA_CORRIENTE' };
 const lower = (v: unknown) => String(v ?? '').toLowerCase();
