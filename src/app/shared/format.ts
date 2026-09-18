@@ -15,3 +15,8 @@ export const today = () => new Date().toISOString().slice(0, 10);
 
 @Pipe({ name: 'fdate' }) export class FdatePipe implements PipeTransform { transform(v: string): string { return v ? fdate(v) : ''; } }
 @Pipe({ name: 'ftime' }) export class FtimePipe implements PipeTransform { transform(v: string): string { return v ? ftime(v) : ''; } }
+
+const AVATARES = ['#a35a2a', '#7c5cd6', '#3f6fc4', '#2f9e6a', '#c0567a', '#d08a1e', '#4a8fa8'];
+/** Color de avatar estable según el nombre (mismo nombre, mismo color). */
+export const avcolor = (name: string): string => { let h = 0; for (const c of name ?? '') h = (h * 31 + c.charCodeAt(0)) >>> 0; return AVATARES[h % AVATARES.length]; };
+@Pipe({ name: 'avcolor' }) export class AvcolorPipe implements PipeTransform { transform(v: string): string { return avcolor(v); } }

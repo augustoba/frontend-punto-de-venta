@@ -118,3 +118,56 @@ button:disabled{background:var(--disabled);color:var(--disabled-text);border-col
 .cash-top{display:flex;justify-content:space-between;align-items:center;padding:12px 0}
 .cash-grid{display:grid;grid-template-columns:290px 1fr;gap:16px;align-items:start}
 @media (max-width:900px){.cash-grid{grid-template-columns:1fr}}
+
+/* ===== Fidelidad con Envi · lote 1: marco, tablas, buscador, medios de pago ===== */
+.topbar{background:rgba(255,255,255,.62);backdrop-filter:blur(14px);border-bottom:1px solid var(--divider-color)}
+.topbar b{font-size:24px;font-weight:800}
+.biz-logo{width:60px;height:60px;border-radius:12px}
+.foot{position:fixed;left:0;right:0;bottom:0;z-index:5;height:24px;display:flex;align-items:center;justify-content:center;gap:10px;background:#21213b;color:#fff;font-size:11px;font-weight:600}
+.foot a{color:#fff;text-decoration:none;opacity:.85}
+.app{padding-bottom:24px}
+table{background:rgba(255,255,255,.72);border:1px solid var(--divider-color);border-radius:16px;box-shadow:0 1px 2px rgba(0,0,0,.03);border-collapse:separate;border-spacing:0}
+th{padding:16px 16px 12px;font-weight:800;letter-spacing:.07em}
+td{padding:13px 16px}
+tr:hover>td{background:var(--row-hover)}
+tr:first-child>th:first-child{border-top-left-radius:16px}tr:first-child>th:last-child{border-top-right-radius:16px}
+.toolbar{gap:10px;margin-bottom:14px}
+.toolbar>input:first-child:not([type]),.toolbar>input[type=search]{height:42px;min-width:240px;border:0;border-radius:14px;padding-left:38px;background:rgba(255,255,255,.55) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='7' cy='7' r='4.6' fill='none' stroke='%239a9a9a' stroke-width='1.6'/%3E%3Cpath d='M10.6 10.6 14 14' stroke='%239a9a9a' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat 13px center/15px;box-shadow:inset 0 0 0 1px var(--divider-color)}
+.toolbar button,.toolbar .btn{height:42px;border-radius:14px}
+.iconbtn{width:42px;padding:0!important;display:inline-grid;place-items:center}
+.cta i,button i,.btn i{margin-right:6px}
+.iconbtn i{margin:0}
+.pay{display:inline-flex;align-items:center;gap:8px;padding:3px 12px 3px 4px;border-radius:99px;font-weight:700;font-size:12px;white-space:nowrap}
+.pay i{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:10px;color:#fff;margin:0}
+.pay-transf{background:rgba(91,91,240,.14);color:#3a3ab0}.pay-transf i{background:#5b5bf0}
+.pay-cc{background:rgba(147,51,234,.15);color:#7a1fc2}.pay-cc i{background:#6d18b8}
+.pay-cash{background:rgba(132,204,22,.2);color:#4d7a12}.pay-cash i{background:#93c93a}
+.pay-card{background:rgba(245,158,11,.16);color:#a5620a}.pay-card i{background:#f59e0b}
+.av{width:28px;height:28px;border-radius:8px;font-size:12px;margin-right:8px;vertical-align:middle}
+.av.round{border-radius:50%}
+td .av+*{vertical-align:middle}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin:0 5px 0 0}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--text-soft)}
+.bar{height:8px;gap:3px;background:transparent}.bar i{border-radius:9px}
+.link i{margin:0 0 0 3px;font-size:10px}
+
+/* ===== sidebar colapsable y grupos ===== */
+.sidebar{position:sticky}
+.collapse-btn{position:absolute;top:18px;right:8px;width:24px;height:24px;padding:0!important;border-radius:50%;display:grid;place-items:center;font-size:10px;background:#fff;color:var(--text-soft);z-index:2}
+.collapse-btn i{margin:0}
+.sidebar .grp{width:100%;display:flex;align-items:center;gap:11px;height:auto;padding:8px 10px;border:0;background:none;border-radius:var(--radius-surface);color:var(--text-soft);font-weight:600;font-size:13px;text-align:left}
+.sidebar .grp i{width:18px;text-align:center;font-size:14px;color:var(--text-label);margin:0}
+.sidebar .grp .chev{margin-left:auto;width:auto;font-size:10px;transition:transform .15s}
+.sidebar .grp .chev.up{transform:rotate(180deg)}
+.sidebar .grp:hover{background:rgba(255,255,255,.7);color:var(--text)}
+.sidebar .grp.on{color:var(--text)}
+.sidebar a.sub{padding-left:38px;font-weight:500}
+.app.collapsed{grid-template-columns:72px 1fr}
+.app.collapsed .sidebar{padding:14px 10px;overflow-x:hidden}
+.app.collapsed .sidebar .t,.app.collapsed .sidebar h6{display:none}
+.app.collapsed .sidebar a,.app.collapsed .sidebar .grp{justify-content:center;padding:10px 0}
+.app.collapsed .sidebar a.sub{padding-left:0}
+.app.collapsed .brand{justify-content:center;margin:34px 0 10px}
+.app.collapsed .collapse-btn{right:24px;top:8px}
+.app.collapsed .sidebar a i,.app.collapsed .sidebar .grp i{font-size:16px}
+.kpi:has(.bar){display:block}.kpi:has(.bar)::before{display:none}

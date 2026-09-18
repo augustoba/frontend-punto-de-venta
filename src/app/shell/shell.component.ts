@@ -1,23 +1,44 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { filter } from 'rxjs';
 import { Api } from '../core/api';
-import { Store } from '../core/store';
 import { Auth } from '../core/auth';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { NAV } from '../nav';
+import { Store } from '../core/store';
+import { NAV, NavItem } from '../nav';
 
-/** Marco del panel: sidebar agrupado + topbar (réplica del layout de Envi). */
+/** Un renglón del menú: un ítem suelto o un grupo desplegable (Historial, Empleados, Listas y catálogos). */
+type Entry = { kind: 'item'; item: NavItem } | { kind: 'group'; group: string; icon: string; items: NavItem[] };
+type GroupEntry = Extract<Entry, { kind: 'group' }>;
+const GRUPO_ICONO: Record<string, string> = { Historial: 'clock-rotate-left', Empleados: 'users', 'Listas y catálogos': 'list-check' };
+
+const KEY_COLAPSADO = 'pos-sidebar-colapsado';
+function leerColapsado(): boolean { try { return localStorage.getItem(KEY_COLAPSADO) === '1'; } catch { return false; } }
+
+/** Marco del panel: sidebar agrupado y colapsable + topbar + pie (réplica del layout de Envi). */
 @Component({
   selector: 'app-shell',
   imports: [RouterOutlet, RouterLink, RouterLinkActive],
   template: `
     <div class="animated-bg" aria-hidden="true"><i></i><i></i><i></i></div>
-    <div class="app">
+    <div class="app" [class.collapsed]="colapsado()">
       <aside class="sidebar">
-        <div class="brand"><span class="mark"><i class="fa-solid fa-cash-register"></i></span><span>Punto de venta</span></div>
-        @for (g of nav; track g.title) {
-          <h6>{{ g.title }}</h6>
-          @for (i of g.items; track i.path) {
-            <a [routerLink]="'/' + i.path" routerLinkActive="on"><i class="fa-solid fa-{{ i.icon }}"></i>{{ i.label }}</a>
+        <button class="collapse-btn" (click)="alternarSidebar()" [title]="colapsado() ? 'Expandir menú' : 'Contraer menú'"><i class="fa-solid" [class.fa-chevron-left]="!colapsado()" [class.fa-chevron-right]="colapsado()"></i></button>
+        <div class="brand"><span class="mark"><i class="fa-solid fa-cash-register"></i></span><span class="t">Punto de venta</span></div>
+        @for (s of secciones; track s.title) {
+          <h6>{{ s.title }}</h6>
+          @for (e of s.entries; track $index) {
+            @if (e.kind === 'item') {
+              <a [routerLink]="'/' + e.item.path" routerLinkActive="on" [title]="e.item.label"><i class="fa-solid fa-{{ e.item.icon }}"></i><span class="t">{{ e.item.label }}</span></a>
+            } @else {
+              <button class="grp" [class.on]="activo(e.items)" (click)="alternar(e.group)" [title]="e.group">
+                <i class="fa-solid fa-{{ e.icon }}"></i><span class="t">{{ e.group }}</span><i class="fa-solid fa-chevron-down chev t" [class.up]="abierto(e)"></i>
+              </button>
+              @if (abierto(e)) {
+                @for (i of e.items; track i.path) {
+                  <a class="sub" [routerLink]="'/' + i.path" routerLinkActive="on" [title]="i.label"><i class="fa-solid fa-{{ i.icon }}"></i><span class="t">{{ i.label }}</span></a>
+                }
+              }
+            }
           }
         }
       </aside>
@@ -46,11 +67,45 @@ import { NAV } from '../nav';
         <router-outlet />
       </div>
     </div>
+    <footer class="foot"><span>{{ anio }} © Todos los derechos reservados</span><span>·</span><span>{{ store.settings().businessName || 'Punto de venta' }}</span></footer>
   `,
 })
 export class ShellComponent {
-  readonly nav = NAV;
   readonly api = inject(Api);
   readonly store = inject(Store);
   readonly auth = inject(Auth);
+  private readonly router = inject(Router);
+  readonly anio = new Date().getFullYear();
+
+  readonly colapsado = signal(leerColapsado());
+  private readonly url = signal(this.router.url);
+  private readonly manual = signal<Record<string, boolean>>({});
+
+  /** El menú agrupado como en Envi: los ítems con `group` se juntan en un desplegable. */
+  readonly secciones = NAV.map((g) => {
+    const entries: Entry[] = [];
+    for (const item of g.items) {
+      if (!item.group) { entries.push({ kind: 'item', item }); continue; }
+      const prev = entries.find((e): e is GroupEntry => e.kind === 'group' && e.group === item.group);
+      if (prev) prev.items.push(item); else entries.push({ kind: 'group', group: item.group, icon: GRUPO_ICONO[item.group] ?? 'folder', items: [item] });
+    }
+    return { title: g.title, entries };
+  });
+
+  constructor() {
+    this.router.events.pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd)).subscribe((e) => this.url.set(e.urlAfterRedirects));
+  }
+
+  /** Un grupo está abierto si el usuario lo abrió o si la pantalla actual es una de sus hijas. */
+  activo(items: NavItem[]): boolean { return items.some((i) => this.url().startsWith('/' + i.path)); }
+  abierto(e: { group: string; items: NavItem[] }): boolean { const m = this.manual()[e.group]; return m ?? this.activo(e.items); }
+  alternar(g: string) {
+    const e = this.secciones.flatMap((s) => s.entries).find((x): x is GroupEntry => x.kind === 'group' && x.group === g)!;
+    this.manual.update((m) => ({ ...m, [g]: !this.abierto(e) }));
+  }
+
+  alternarSidebar() {
+    this.colapsado.update((v) => !v);
+    try { localStorage.setItem(KEY_COLAPSADO, this.colapsado() ? '1' : '0'); } catch { /* sin storage */ }
+  }
 }

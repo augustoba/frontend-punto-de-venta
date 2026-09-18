@@ -2,14 +2,14 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ModalComponent } from '../../shared/modal.component';
-import { FdatePipe, FtimePipe, MoneyPipe, fdate } from '../../shared/format';
+import { AvcolorPipe, FdatePipe, FtimePipe, MoneyPipe, fdate } from '../../shared/format';
 import { Store } from '../../core/store';
 import { Sale } from '../../core/models';
 
 /** Ventas (réplica de Envi /sales): KPIs del día, filtros, tabla, detalle y anulación. */
 @Component({
   selector: 'app-ventas',
-  imports: [FormsModule, RouterLink, ModalComponent, MoneyPipe, FdatePipe, FtimePipe],
+  imports: [FormsModule, RouterLink, ModalComponent, MoneyPipe, FdatePipe, FtimePipe, AvcolorPipe],
   template: `
     <h1>Ventas</h1>
     <p class="sub">Creá, editá y monitoreá las ventas de tu negocio.</p>
@@ -21,15 +21,16 @@ import { Sale } from '../../core/models';
       <div class="kpi">
         <small>Medios de pago · {{ hoy().length }} ventas</small>
         <div class="bar">@for (m of medios(); track m.nombre) { <i [style.flex]="m.n" [style.background]="m.color"></i> }</div>
-        <span class="muted">{{ resumen() }}</span>
+        <div class="legend">@for (m of medios(); track m.nombre) { <span><i class="dot" [style.background]="m.color"></i>{{ m.nombre }} {{ pct(m.n) }}%</span> } @empty { <span>—</span> }</div>
       </div>
     </div>
 
     <div class="toolbar">
-      <input placeholder="🔍 Buscar cliente o vendedor..." style="width: 270px" [ngModel]="q()" (ngModelChange)="q.set($event)" />
-      <button (click)="filtros.set(!filtros())">Filtrar</button><span class="sp"></span>
-      <button (click)="exportar()" title="Exportar CSV">⭳</button>
-      <a class="btn cta" routerLink="/caja" style="display: inline-grid; place-items: center; text-decoration: none">+ Nueva venta</a>
+      <input placeholder="Buscar..." [ngModel]="q()" (ngModelChange)="q.set($event)" />
+      <button (click)="filtros.set(!filtros())"><i class="fa-solid fa-filter"></i>Filtrar</button><span class="sp"></span>
+      <button class="iconbtn" (click)="refrescar()" title="Actualizar"><i class="fa-solid fa-rotate-right"></i></button>
+      <button class="iconbtn" (click)="exportar()" title="Exportar CSV"><i class="fa-solid fa-download"></i></button>
+      <a class="btn cta" routerLink="/caja" style="display: inline-grid; place-items: center; text-decoration: none"><span><i class="fa-solid fa-plus"></i>Nueva venta</span></a>
     </div>
     @if (filtros()) {
       <div class="card" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px">
@@ -45,11 +46,11 @@ import { Sale } from '../../core/models';
       @for (v of filtradas(); track v.id) {
         <tr>
           <td><b>{{ v.at | fdate }}</b><br /><small class="muted">{{ v.at | ftime }}</small></td>
-          <td><span class="av">{{ v.seller[0] }}</span>{{ v.seller }}</td>
-          <td>@if (v.customerId) { <span class="av">{{ store.customerName(v.customerId)[0] }}</span>{{ store.customerName(v.customerId) }} } @else { <span class="av" style="background: var(--avatar-gray)">?</span><span class="muted">Sin definir</span> }</td>
-          <td>{{ v.total | money }}</td>
-          <td><span class="badge" [class]="'badge ' + clase(v)">{{ v.method }}</span></td>
-          <td>{{ v.lines.length }} prod.<br /><a class="link" (click)="detalle.set(v)">Ver más ⌄</a></td>
+          <td><span class="av" [style.background]="v.seller | avcolor">{{ v.seller[0] }}</span><b>{{ v.seller }}</b></td>
+          <td>@if (v.customerId) { <span class="av round" [style.background]="store.customerName(v.customerId) | avcolor">{{ store.customerName(v.customerId)[0] }}</span>{{ store.customerName(v.customerId) }} } @else { <span class="av round" style="background: var(--avatar-gray)">?</span><span class="muted">Sin definir</span> }</td>
+          <td><b>{{ v.total | money }}</b></td>
+          <td><span class="pay {{ pagoClase(v.method) }}"><i class="fa-solid {{ pagoIcono(v.method) }}"></i>{{ v.method }}</span></td>
+          <td>{{ v.lines.length }} prod.<br /><a class="link" (click)="detalle.set(v)">Ver más<i class="fa-solid fa-chevron-down"></i></a></td>
           <td class="right"><div class="menu"><button class="x" (click)="menu.set(menu() === v.id ? '' : v.id)">⋮</button>
             @if (menu() === v.id) { <div class="pop"><button (click)="detalle.set(v); menu.set('')">Ver detalle</button><button (click)="facturar(v); menu.set('')">Generar factura</button><button class="danger" (click)="anular(v); menu.set('')">Eliminar</button></div> }</div></td>
         </tr>
@@ -103,6 +104,10 @@ export class VentasComponent {
       (!this.desde() || v.at.slice(0, 10) >= this.desde()) && (!this.hasta() || v.at.slice(0, 10) <= this.hasta()) &&
       (!this.fCliente() || v.customerId === this.fCliente()) && (!this.fMedio() || v.method === this.fMedio()));
   });
+  pct(n: number): number { const t = this.hoy().length; return t ? Math.round((n / t) * 100) : 0; }
+  pagoClase(m: string): string { return { Efectivo: 'pay-cash', Transferencia: 'pay-transf', Tarjeta: 'pay-card', 'Cuenta corriente': 'pay-cc' }[m] ?? 'pay-card'; }
+  pagoIcono(m: string): string { return { Efectivo: 'fa-money-bill-wave', Transferencia: 'fa-right-left', Tarjeta: 'fa-credit-card', 'Cuenta corriente': 'fa-wallet' }[m] ?? 'fa-circle'; }
+  refrescar() { if (this.store.remote()) this.store.sync(); }
   clase(v: Sale): string { return { Efectivo: 'b-green', Transferencia: 'b-blue', Tarjeta: 'b-amber', 'Cuenta corriente': 'b-gray' }[v.method]; }
   facturar(v: Sale) { if (!v.invoiced) { this.store.createInvoice(v.customerId, v.lines.map((l) => l.name).join(', '), v.total); this.store.db.update((d) => { const c = structuredClone(d); const s = c.sales.find((x) => x.id === v.id); if (s) s.invoiced = true; return c; }); } }
   anular(v: Sale) { if (confirm(`¿Eliminar la venta #${v.number}? Se devuelve el stock y se quitan sus asientos.`)) this.store.deleteSale(v.id); }

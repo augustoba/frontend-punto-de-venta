@@ -5,6 +5,8 @@ export interface NavItem {
   subtitle: string;
   /** Ícono Font Awesome (sin el prefijo fa-). */
   icon: string;
+  /** Si está, el ítem se muestra dentro de un desplegable con ese nombre. */
+  group?: string;
 }
 export interface NavGroup {
   title: string;
@@ -16,10 +18,10 @@ export const NAV: NavGroup[] = [
     title: 'Análisis',
     items: [
       { label: 'Reportes', path: 'reportes', subtitle: 'Analizá el rendimiento de tu negocio con reportes.', icon: 'chart-line' },
-      { label: 'Historial de precios', path: 'historial-precios', subtitle: 'Seguí cómo cambiaron los precios de tus productos.', icon: 'chart-simple' },
-      { label: 'Historial de stock', path: 'historial-stock', subtitle: 'Revisá todos los movimientos de stock de tus productos.', icon: 'chart-simple' },
-      { label: 'Ajustes de stock', path: 'ajustes-stock', subtitle: 'Revisá los ajustes masivos de stock: quién los hizo, cuándo y qué tocaron.', icon: 'sliders' },
-      { label: 'Cierres de caja', path: 'cierres-caja', subtitle: 'Consultá los cierres de caja de cada turno.', icon: 'cash-register' },
+      { label: 'Historial de precios', path: 'historial-precios', subtitle: 'Seguí cómo cambiaron los precios de tus productos.', icon: 'chart-simple', group: 'Historial' },
+      { label: 'Historial de stock', path: 'historial-stock', subtitle: 'Revisá todos los movimientos de stock de tus productos.', icon: 'chart-simple', group: 'Historial' },
+      { label: 'Ajustes de stock', path: 'ajustes-stock', subtitle: 'Revisá los ajustes masivos de stock: quién los hizo, cuándo y qué tocaron.', icon: 'sliders', group: 'Historial' },
+      { label: 'Cierres de caja', path: 'cierres-caja', subtitle: 'Consultá los cierres de caja de cada turno.', icon: 'cash-register', group: 'Historial' },
     ],
   },
   {
@@ -49,8 +51,8 @@ export const NAV: NavGroup[] = [
   {
     title: 'Usuarios',
     items: [
-      { label: 'Empleados', path: 'empleados', subtitle: 'Controlá el equipo de cada sucursal, sus permisos y las horas trabajadas.', icon: 'users' },
-      { label: 'Horas trabajadas', path: 'horas', subtitle: 'Controlá las horas que trabaja cada empleado.', icon: 'clock' },
+      { label: 'Empleados', path: 'empleados', subtitle: 'Controlá el equipo de cada sucursal, sus permisos y las horas trabajadas.', icon: 'users', group: 'Empleados' },
+      { label: 'Horas trabajadas', path: 'horas', subtitle: 'Controlá las horas que trabaja cada empleado.', icon: 'clock', group: 'Empleados' },
       { label: 'Accesos', path: 'accesos', subtitle: 'Tu contraseña y los usuarios que pueden ingresar.', icon: 'key' },
     ],
   },
@@ -58,7 +60,7 @@ export const NAV: NavGroup[] = [
     title: 'Configuración',
     items: [
       { label: 'Ajustes', path: 'ajustes', subtitle: 'Configurá cómo funciona tu negocio dentro de la app.', icon: 'gear' },
-      { label: 'Categorías', path: 'categorias', subtitle: 'Organizá tu catálogo en categorías.', icon: 'tags' },
+      { label: 'Categorías', path: 'categorias', subtitle: 'Organizá tu catálogo en categorías.', icon: 'tags', group: 'Listas y catálogos' },
     ],
   },
 ];
