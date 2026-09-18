@@ -89,3 +89,5 @@ Funciones que Envi tiene y que en Ajustes figuran como «Próximamente». Quedan
 | **Facturación fiscal real (ARCA)** | Integración con el emisor fiscal; hoy sólo hay facturas de prueba. | Grande |
 
 Ya construido en esta tanda: Servicios (sin stock), fotos de producto, lector de mano y cámara para códigos de barras, listas de precios, depósitos y transferencias.
+
+Ver también el análisis de la segunda referencia (Ventario): `backend-punto-de-venta/referencia-ventario/ANALISIS_COMPARATIVO.md` (Dashboard, Primeros pasos, devoluciones, auditoría de stock, reportes de reposición, etc.).
