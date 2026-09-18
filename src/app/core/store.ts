@@ -40,6 +40,8 @@ const DEFAULT_CATEGORIES: Category[] = [
 export const DEFAULT_SETTINGS: Settings = {
   businessName: 'Mi negocio', arqueo: false, alertDiff: 2000, createProductFromCash: true, hideStockFilter: false,
   cumulativeDiscounts: false, sellerCommission: 10, transferDiscount: 0, defaultIva: 21, markup: 40, hideOutOfStock: false, logo: '',
+  businessColor: '#eeb37a', address: '', city: '', phone: '', contactEmail: '', receiptAction: 'preguntar', receiptFormat: 'ticket80', receiptQuality: 'normal', exchangeTicket: false,
+  productImages: false, services: false, weightSales: false, cashShipping: false, bankReconciliation: false, multiCurrency: false,
 };
 
 function emptyDb(): Db {

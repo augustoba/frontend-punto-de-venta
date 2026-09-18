@@ -132,7 +132,12 @@ interface CartLine { productId: string; name: string; qty: number; price: number
         <div class="card" style="margin-top: 12px">
           <label class="row" style="justify-content: space-between">Emitir factura <span class="sw" [class.on]="c.invoice" (click)="c.invoice = !c.invoice"></span></label>
           <hr style="border: 0; border-top: 1px solid var(--divider-color)" />
-          <label class="row" style="justify-content: space-between">Imprimir comprobante <span class="sw" [class.on]="c.print" (click)="c.print = !c.print"></span></label>
+          @if (store.settings().receiptAction !== 'nada') {
+            <label class="row" style="justify-content: space-between">Imprimir comprobante <span class="sw" [class.on]="c.print" (click)="c.print = !c.print"></span></label>
+          }
+          @if (store.settings().exchangeTicket) {
+            <label class="row" style="justify-content: space-between">Ticket de cambio (para regalo) <span class="sw" [class.on]="c.gift" (click)="c.gift = !c.gift"></span></label>
+          }
         </div>
         <div class="field" style="margin-top: 10px"><label>Notas</label><textarea style="width: 100%; height: 60px; border: 1px solid var(--control-border-color); border-radius: 12px; padding: 8px" [(ngModel)]="c.notes" placeholder="Agregá una nota para esta venta"></textarea></div>
         @if (error()) { <span class="note bad">{{ error() }}</span> }
@@ -368,7 +373,7 @@ export class CajaComponent implements OnInit, AfterViewInit {
   // cobro
   abrirCobro(customerId: string | null = null) {
     this.error.set('');
-    this.cobro.set({ customerId, method: 'Efectivo' as PayMethod, paid: true, discountPct: 0, invoice: false, print: false, notes: '' });
+    this.cobro.set({ customerId, method: 'Efectivo' as PayMethod, paid: true, discountPct: 0, invoice: false, print: this.store.settings().receiptAction === 'imprimir', gift: false, notes: '' });
   }
   elegirCliente(v: string | null) {
     const c = this.cobro();
@@ -388,15 +393,22 @@ export class CajaComponent implements OnInit, AfterViewInit {
         customerId: c.customerId, lines: this.cart().map((l) => ({ productId: l.productId, qty: l.qty, price: l.price, discountUnit: l.discountUnit })),
         discountPct: c.discountPct, method: c.method, paid: c.paid, notes: c.notes, invoice: c.invoice, budgetId: this.budgetId, priceListId: this.listaId(),
       });
-      if (c.print) this.imprimir(s.number);
+      if (c.print) this.imprimir(s.number, false);
+      if (c.gift) this.imprimir(s.number, true);
       this.cobro.set(null); this.cart.set([]); this.budgetId = null;
       if (this.route.snapshot.queryParamMap.get('presupuesto')) this.router.navigate(['/caja']);
     } catch (e: any) { this.error.set(e.message ?? 'No se pudo guardar la venta'); }
   }
-  private imprimir(n: number) {
+  /** Comprobante según los ajustes: formato (A4 / ticket 80 mm / 58 mm) y calidad; `regalo` = ticket de cambio sin precios. */
+  private imprimir(n: number, regalo: boolean) {
     const s = this.store.db().sales.find((x) => x.number === n); if (!s) return;
-    const w = window.open('', '_blank', 'width=380,height=600'); if (!w) return;
-    w.document.write(`<pre style="font-family:monospace">${this.store.settings().businessName}\nVenta #${s.number}\n${new Date(s.at).toLocaleString('es-AR')}\n----------------\n${s.lines.map((l) => `${l.qty} x ${l.name}  ${((l.price - l.discountUnit) * l.qty).toFixed(2)}`).join('\n')}\n----------------\nTOTAL ${s.total.toFixed(2)}\n${s.method}</pre>`);
+    const cfg = this.store.settings();
+    const ancho = { a4: 794, ticket80: 302, ticket58: 219 }[cfg.receiptFormat] ?? 302;
+    const w = window.open('', '_blank', `width=${ancho + 40},height=640`); if (!w) return;
+    const peso = cfg.receiptQuality === 'baja' ? 800 : 500, esc = (x: string) => x.replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c] as string));
+    const lineas = s.lines.map((l) => regalo ? `${l.qty} x ${esc(l.name)}` : `${l.qty} x ${esc(l.name)}  ${((l.price - l.discountUnit) * l.qty).toFixed(2)}`).join('\n');
+    const contacto = [cfg.address, cfg.city, cfg.phone].filter(Boolean).map(esc).join(' · ');
+    w.document.write(`<pre style="font-family:monospace;font-weight:${peso};width:${ancho}px;white-space:pre-wrap;margin:0 auto">${esc(cfg.businessName)}${contacto ? '\n' + contacto : ''}\n${regalo ? 'TICKET DE CAMBIO' : 'Venta #' + s.number}${regalo ? '\nVenta #' + s.number : ''}\n${new Date(s.at).toLocaleString('es-AR')}\n----------------\n${lineas}\n----------------\n${regalo ? 'Presentá este cupón para el cambio.' : 'TOTAL ' + s.total.toFixed(2) + '\n' + s.method}</pre>`);
     w.document.close(); w.print();
   }
 

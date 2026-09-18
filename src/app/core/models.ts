@@ -118,6 +118,9 @@ export interface Settings {
   markup: number;
   hideOutOfStock: boolean;
   logo: string;                  // data URL de la imagen del negocio ('' = sin logo)
+  businessColor: string; address: string; city: string; phone: string; contactEmail: string;
+  receiptAction: 'nada' | 'imprimir' | 'preguntar'; receiptFormat: 'a4' | 'ticket80' | 'ticket58'; receiptQuality: 'normal' | 'baja'; exchangeTicket: boolean;
+  productImages: boolean; services: boolean; weightSales: boolean; cashShipping: boolean; bankReconciliation: boolean; multiCurrency: boolean;
 }
 
 export interface Db {

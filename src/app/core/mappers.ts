@@ -105,4 +105,7 @@ export const mapSettings = (x: any): Settings => ({
   businessName: x.businessName ?? '', arqueo: !!x.arqueo, alertDiff: num(x.alertDiff), createProductFromCash: !!x.createProductFromCash,
   hideStockFilter: !!x.hideStockFilter, cumulativeDiscounts: !!x.cumulativeDiscounts, sellerCommission: num(x.sellerCommission),
   transferDiscount: num(x.transferDiscount), defaultIva: num(x.defaultIva), markup: num(x.markup), hideOutOfStock: !!x.hideOutOfStock, logo: x.logo ?? '',
+  businessColor: x.businessColor ?? '#eeb37a', address: x.address ?? '', city: x.city ?? '', phone: x.phone ?? '', contactEmail: x.contactEmail ?? '',
+  receiptAction: x.receiptAction ?? 'preguntar', receiptFormat: x.receiptFormat ?? 'ticket80', receiptQuality: x.receiptQuality ?? 'normal', exchangeTicket: !!x.exchangeTicket,
+  productImages: !!x.productImages, services: !!x.services, weightSales: !!x.weightSales, cashShipping: !!x.cashShipping, bankReconciliation: !!x.bankReconciliation, multiCurrency: !!x.multiCurrency,
 });

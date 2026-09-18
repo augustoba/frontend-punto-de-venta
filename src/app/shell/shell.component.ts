@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, effect, inject, signal } from '@angular/core';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
 import { Api } from '../core/api';
@@ -93,6 +93,7 @@ export class ShellComponent {
   });
 
   constructor() {
+    effect(() => document.documentElement.style.setProperty('--biz', this.store.settings().businessColor || '#eeb37a'));
     this.router.events.pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd)).subscribe((e) => this.url.set(e.urlAfterRedirects));
   }
 
