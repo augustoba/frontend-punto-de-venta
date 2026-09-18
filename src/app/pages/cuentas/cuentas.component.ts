@@ -1,7 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ModalComponent } from '../../shared/modal.component';
-import { FdatePipe, FtimePipe, MoneyPipe, today } from '../../shared/format';
+import { AvcolorPipe, FdatePipe, FtimePipe, MoneyPipe, today } from '../../shared/format';
 import { Store, r2 } from '../../core/store';
 import { Allocation } from '../../core/models';
 
@@ -15,45 +15,56 @@ const ALLOC: { v: Allocation; label: string; desc: string }[] = [
 /** Cuentas y saldos (tesorería): cuentas, libro de movimientos, cheques y centros de costos. Ver ANALISIS_tesoreria.md */
 @Component({
   selector: 'app-cuentas',
-  imports: [FormsModule, ModalComponent, MoneyPipe, FdatePipe, FtimePipe],
+  imports: [FormsModule, ModalComponent, MoneyPipe, FdatePipe, FtimePipe, AvcolorPipe],
   template: `
     <h1>Cuentas y saldos</h1>
     <p class="sub">Revisá el dinero disponible por caja y banco, y seguí cada movimiento.</p>
 
-    <div style="display: grid; grid-template-columns: repeat(4, 1fr) 1.4fr; gap: 12px; margin-bottom: 16px">
-      <div class="kpi"><small>Cajas</small><strong>{{ suma('caja') | money }}</strong></div>
-      <div class="kpi"><small>Bancos</small><strong>{{ suma('banco') | money }}</strong></div>
-      <div class="kpi"><small>Cuenta corriente</small><br />A cobrar <b class="pos">{{ store.totalReceivable() | money }}</b><br />A pagar <b class="neg">{{ store.totalPayable() | money }}</b></div>
-      <div class="kpi" style="cursor: pointer" (click)="cheques.set(true)"><small>Cheques ›</small><br />A cobrar <b class="pos">{{ chequesTotal('cobrar') | money }}</b><br />A pagar <b style="color: var(--accent-amber)">{{ chequesTotal('pagar') | money }}</b></div>
-      <div class="kpi"><small>Distribución del saldo</small> <b style="float: right; font-size: 20px">{{ suma('caja') + suma('banco') | money }}</b>
+    <div class="kpis c5">
+      <div class="kpi ic-cash"><small>Cajas</small><strong>{{ suma('caja') | money }}</strong></div>
+      <div class="kpi ic-bank"><small>Bancos</small><strong>{{ suma('banco') | money }}</strong></div>
+      <div class="kpi noic"><small>Cuenta corriente</small>
+        <div class="kline"><span>A cobrar</span><b class="pos">{{ store.totalReceivable() | money }}</b><i class="fa-solid fa-chevron-right"></i></div>
+        <div class="kline"><span>A pagar</span><b class="neg">{{ store.totalPayable() | money }}</b><i class="fa-solid fa-chevron-right"></i></div></div>
+      <div class="kpi noic" style="cursor: pointer" (click)="cheques.set(true)"><small>Cheques</small>
+        <div class="kline"><span>A cobrar</span><b class="pos">{{ chequesTotal('cobrar') | money }}</b><i class="fa-solid fa-chevron-right"></i></div>
+        <div class="kline"><span>A pagar</span><b style="color: var(--accent-amber)">{{ chequesTotal('pagar') | money }}</b><i class="fa-solid fa-chevron-right"></i></div></div>
+      <div class="kpi noic"><small>Distribución del saldo</small> <b class="big">{{ suma('caja') + suma('banco') | money }}</b>
         <div class="bar"><i [style.flex]="pos(suma('caja'))" style="background: var(--success)"></i><i [style.flex]="pos(suma('banco'))" style="background: var(--accent-blue)"></i></div>
-        <span class="muted">Cajas {{ porc('caja') }}% · Bancos {{ porc('banco') }}%</span></div>
+        <div class="legend"><span><i class="dot" style="background: var(--success)"></i>Cajas {{ porc('caja') }}%</span><span><i class="dot" style="background: var(--accent-blue)"></i>Bancos {{ porc('banco') }}%</span></div></div>
     </div>
 
-    <div class="row" style="justify-content: space-between"><small class="muted">CUENTAS · {{ store.accounts().length }} ACTIVAS</small><button class="cta" (click)="cuentaForm.set({ name: '', type: 'caja', color: '#8fc24a', notes: '', saldo: 0 })">+ Nueva cuenta</button></div>
+    <div class="row" style="justify-content: space-between"><small class="muted">CUENTAS · {{ store.accounts().length }} ACTIVAS</small><button class="cta" (click)="cuentaForm.set({ name: '', type: 'caja', color: '#8fc24a', notes: '', saldo: 0 })"><i class="fa-solid fa-plus"></i>Nueva cuenta</button></div>
     <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 10px 0 16px">
       @for (a of store.accounts(); track a.id) {
-        <div class="card" [style.background]="a.type === 'caja' ? 'rgba(160,190,60,.18)' : 'rgba(5,133,254,.12)'"><small>{{ a.type === 'caja' ? '💵' : '🏦' }} {{ a.name }}</small><br /><strong>{{ store.balanceOfAccount(a.id) | money }}</strong>
-          <div class="muted" style="margin-top: 8px; font-size: 12px"><span class="link" (click)="fCuenta.set(a.id)">Ver movimientos</span> · <span class="link" (click)="editarCuenta(a)">Editar</span></div></div>
+        <div class="acct" [class.bank]="a.type === 'banco'">
+          <div class="ah"><span class="ai"><i class="fa-solid" [class.fa-money-bill-1]="a.type === 'caja'" [class.fa-building-columns]="a.type === 'banco'"></i></span>{{ a.name }}</div>
+          <strong>{{ store.balanceOfAccount(a.id) | money }}</strong>
+          <div class="af"><span class="link" (click)="fCuenta.set(a.id)">Ver movimientos</span><span class="link" (click)="editarCuenta(a)">Editar</span></div></div>
       }
     </div>
 
     <div class="toolbar">
-      <input class="search" placeholder="Buscar..." style="width: 240px" [ngModel]="q()" (ngModelChange)="q.set($event)" />
-      <select [ngModel]="fCuenta()" (ngModelChange)="fCuenta.set($event)"><option value="">Todas las cuentas</option>@for (a of store.accounts(); track a.id) { <option [value]="a.id">{{ a.name }}</option> }</select>
+      <input class="search" placeholder="Buscar..." [ngModel]="q()" (ngModelChange)="q.set($event)" />
+      <button (click)="filtros.set(!filtros())"><i class="fa-solid fa-filter"></i>Filtrar</button>
       <span class="sp"></span>
-      <button (click)="centros.set(true)">◔ Centros de costos</button>
-      <div class="menu"><button class="cta" (click)="menu.set(!menu())">+ Crear movimiento</button>
+      <button class="iconbtn" (click)="refrescar()" title="Actualizar"><i class="fa-solid fa-rotate-right"></i></button>
+      <button (click)="centros.set(true)"><i class="fa-solid fa-chart-pie"></i>Centros de costos</button>
+      <div class="menu"><button class="cta" (click)="menu.set(!menu())"><i class="fa-solid fa-plus"></i>Crear movimiento</button>
         @if (menu()) { <div class="pop"><button (click)="abrirMov('ingreso')">Registrar ingreso</button><button (click)="abrirMov('egreso')">Registrar egreso</button><button (click)="transf.set({ from: '', to: '', monto: 0, desc: '' }); menu.set(false)">Movimiento entre cuentas</button></div> }</div>
     </div>
+    @if (filtros() || fCuenta()) {
+      <div class="card filtro-panel"><div class="field"><label>Cuenta</label>
+        <select [ngModel]="fCuenta()" (ngModelChange)="fCuenta.set($event)"><option value="">Todas las cuentas</option>@for (a of store.accounts(); track a.id) { <option [value]="a.id">{{ a.name }}</option> }</select></div></div>
+    }
 
     <table>
       <tr><th>Fecha</th><th>Valor</th><th>Categoría</th><th>Cuenta</th><th>Descripción</th><th>Creación</th></tr>
       @for (m of libro(); track m.id) {
         <tr><td><b>{{ m.at | fdate }}</b><br /><small class="muted">{{ m.at | ftime }}</small></td>
           <td [class]="m.amount >= 0 ? 'pos' : 'neg'"><b>{{ m.amount >= 0 ? '+ ' : '− ' }}{{ abs(m.amount) | money }}</b></td>
-          <td><span class="badge b-amber">{{ m.category }}{{ m.subcategory ? ' › ' + m.subcategory : '' }}</span></td>
-          <td><b>{{ store.account(m.accountId)?.name }}</b></td><td>{{ m.description }}</td><td><span class="av">{{ m.user[0] }}</span>{{ m.user }}</td></tr>
+          <td><span class="catbadge" [style.background]="colorCat(m.category)">{{ emojiCat(m.category) }} {{ m.subcategory || m.category }}</span></td>
+          <td><b>{{ store.account(m.accountId)?.name }}</b></td><td>{{ m.description }}</td><td><span class="av" [style.background]="m.user | avcolor">{{ m.user[0] }}</span><b>{{ m.user }}</b></td></tr>
       } @empty { <tr><td colspan="6" class="empty">No hay movimientos todavía.</td></tr> }
     </table>
     <div class="pager"><span>Mostrando {{ libro().length }} de {{ store.db().movements.length }}</span></div>
@@ -148,6 +159,11 @@ export class CuentasComponent {
   readonly store = inject(Store);
   readonly alloc = ALLOC;
   abs = Math.abs;
+  readonly filtros = signal(false);
+  refrescar() { if (this.store.remote()) this.store.sync(); }
+  private catDe(nombre: string) { return this.store.categories().find((c) => c.name === nombre); }
+  emojiCat(nombre: string) { return this.catDe(nombre)?.emoji ?? ''; }
+  colorCat(nombre: string) { const c = this.catDe(nombre)?.color; return c && /^#[0-9a-f]{6}$/i.test(c) ? c + '33' : 'rgba(240,200,150,.4)'; }
   readonly q = signal(''); readonly fCuenta = signal('');
   readonly menu = signal(false);
   readonly cuentaForm = signal<any>(null); readonly mov = signal<any>(null); readonly transf = signal<any>(null);

@@ -1,6 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { Api } from '../../core/api';
 import { ListasPreciosComponent } from './listas-precios.component';
 import { ModalComponent } from '../../shared/modal.component';
 import { MoneyPipe } from '../../shared/format';
@@ -18,23 +19,28 @@ type StockFilter = '' | 'ideal' | 'critico' | 'sin';
     <p class="sub">Cargá productos, gestioná stock y actualizá precios.</p>
 
     <div class="kpis k3">
-      <div class="kpi"><small>Productos</small><strong>{{ activos().length }}</strong></div>
-      <div class="kpi"><small>Stock crítico</small><strong>{{ criticos() }}</strong></div>
+      <div class="kpi ic-box"><small>Productos</small><strong>{{ activos().length }}</strong></div>
+      <div class="kpi ic-warn"><small>Stock crítico</small><strong>{{ criticos() }}</strong></div>
       <div class="kpi">
-        <small>Estado del stock · {{ activos().length }} productos</small>
+        <small>Estado del stock <span style="float: right">{{ activos().length }} PRODUCTOS</span></small>
         <div class="bar"><i [style.flex]="ideal()" style="background: var(--success)"></i><i [style.flex]="sinStock()" style="background: var(--danger)"></i></div>
-        <span class="muted">Stock ideal {{ pct(ideal()) }}% · Sin stock {{ pct(sinStock()) }}%</span>
+        <div class="legend"><span><i class="dot" style="background: var(--success)"></i>Stock ideal {{ pct(ideal()) }}%</span><span><i class="dot" style="background: var(--danger)"></i>Sin stock {{ pct(sinStock()) }}%</span></div>
       </div>
     </div>
 
     <div class="toolbar">
-      <input class="search" placeholder="Buscar por nombre o código..." style="width: 300px" [ngModel]="q()" (ngModelChange)="q.set($event)" />
-      <button (click)="showFilters.set(!showFilters())">Filtrar</button>
+      <input class="search" placeholder="Buscar..." [ngModel]="q()" (ngModelChange)="q.set($event)" />
+      <button (click)="showFilters.set(!showFilters())"><i class="fa-solid fa-filter"></i>Filtrar</button>
       <span class="sp"></span>
-      <div class="menu">
-        @if (store.remote()) { <button (click)="listasOpen.set(true)">🏷 Listas de precios</button> }
-        <button class="cta" (click)="openNew()">+ Nuevo producto</button>
-        <button class="cta" style="margin-left: 2px" (click)="menu.set(menu() === 'new' ? '' : 'new')">▾</button>
+      <button class="iconbtn" (click)="refrescar()" title="Actualizar"><i class="fa-solid fa-rotate-right"></i></button>
+      @if (listas().length) {
+        <select class="lista-sel" [ngModel]="listaId()" (ngModelChange)="listaId.set($event)" title="Lista de precios">@for (l of listas(); track l.id) { <option [ngValue]="l.id">{{ l.name }}</option> }</select>
+        <button class="iconbtn" (click)="listasOpen.set(true)" title="Administrar listas de precios"><i class="fa-solid fa-tags"></i></button>
+      }
+      <button class="iconbtn" (click)="exportar()" title="Exportar CSV"><i class="fa-solid fa-file-arrow-down"></i></button>
+      <button class="iconbtn" (click)="imprimir()" title="Imprimir"><i class="fa-solid fa-print"></i></button>
+      <div class="menu split">
+        <button class="cta" (click)="openNew()"><i class="fa-solid fa-plus"></i>Nuevo producto</button><button class="cta caret" (click)="menu.set(menu() === 'new' ? '' : 'new')" title="Más opciones"><i class="fa-solid fa-chevron-down"></i></button>
         @if (menu() === 'new') {
           <div class="pop">
             <button (click)="openCombo(); menu.set('')">Nuevo combo</button>
@@ -71,17 +77,18 @@ type StockFilter = '' | 'ideal' | 'critico' | 'sin';
     <table>
       <tr>
         <th><input type="checkbox" style="height: auto" [checked]="todosMarcados()" (change)="marcarTodos($any($event.target).checked)" /></th>
-        <th>Producto</th><th>Código de barra</th><th>Categoría</th><th>Proveedor</th><th class="right">Precio</th><th>Inventario</th><th></th>
+        <th class="c">Img</th><th>Producto</th><th>Código de barra</th><th>Categoría</th><th>Proveedor</th><th class="right">Precio</th><th>Inventario</th><th></th>
       </tr>
       @for (p of filtrados(); track p.id) {
         <tr>
           <td><input type="checkbox" style="height: auto" [checked]="selected().includes(p.id)" (change)="marcar(p.id, $any($event.target).checked)" /></td>
+          <td class="c"><span class="img-ph" title="Sin imagen disponible"><i class="fa-solid fa-bag-shopping"></i></span></td>
           <td><b>{{ p.name }}</b> @if (p.combo.length) { <span class="badge b-gray">Combo</span> }</td>
           <td>{{ p.barcode }}</td>
-          <td>@if (catName(p); as c) { <span class="badge b-blue">{{ c }}</span> }</td>
+          <td>@if (catName(p); as c) { <span class="badge b-blue"><i class="fa-solid fa-circle-dot" style="margin-right: 5px; font-size: 10px"></i>{{ c }}</span> }</td>
           <td>{{ store.supplier(p.supplierId)?.name }}</td>
           <td class="right">
-            @if (p.offer > 0) { <s class="muted">{{ p.price | money }}</s><br /><b>{{ p.offer | money }}</b> } @else { {{ p.price | money }} }
+            @if (p.offer > 0 && !listaNoPrincipal()) { <s class="muted">{{ p.price | money }}</s><br /><b>{{ p.offer | money }}</b> } @else { <b>{{ precioVer(p) | money }}</b> }
           </td>
           <td>
             @if (editing() === p.id) {
@@ -107,7 +114,7 @@ type StockFilter = '' | 'ideal' | 'critico' | 'sin';
           </td>
         </tr>
       } @empty {
-        <tr><td colspan="8" class="empty">No hay productos. Creá el primero con «Nuevo producto».</td></tr>
+        <tr><td colspan="9" class="empty">No hay productos. Creá el primero con «Nuevo producto».</td></tr>
       }
     </table>
     <div class="pager"><span>Mostrando {{ filtrados().length }} de {{ store.db().products.length }}</span></div>
@@ -182,6 +189,8 @@ type StockFilter = '' | 'ideal' | 'critico' | 'sin';
 })
 export class StockComponent {
   readonly store = inject(Store);
+  private readonly api = inject(Api);
+  constructor() { this.cargarListas(); }
   readonly q = signal('');
   readonly fStock = signal<StockFilter>('');
   readonly fSupplier = signal('');
@@ -189,6 +198,25 @@ export class StockComponent {
   readonly fArchived = signal<'no' | 'si'>('no');
   readonly showFilters = signal(false);
   readonly listasOpen = signal(false);
+  /** Listas de precios del servidor; con una lista distinta de la Principal la tabla muestra `precio × (1 + %)`. */
+  readonly listas = signal<{ id: number; name: string; percent: number; main: boolean }[]>([]);
+  readonly listaId = signal<number | null>(null);
+  listaNoPrincipal() { const l = this.listas().find((x) => x.id === this.listaId()); return !!l && !l.main; }
+  precioVer(p: Product): number { const l = this.listas().find((x) => x.id === this.listaId()); return !l || l.main ? p.price : Math.round(p.price * (1 + l.percent / 100) * 100) / 100; }
+  refrescar() { if (this.store.remote()) this.store.sync(); }
+  private async cargarListas() {
+    try {
+      const ls = await this.api.get<any[]>('/api/price-lists');
+      this.listas.set(ls.map((l) => ({ id: l.id, name: l.name, percent: Number(l.percent), main: !!l.main })));
+      this.listaId.set(ls.find((l) => l.main)?.id ?? null);
+    } catch { /* sin API: sólo el precio base */ }
+  }
+  exportar() {
+    const filas = [['Producto', 'Código', 'Categoría', 'Proveedor', 'Precio', 'Costo', 'Stock'], ...this.filtrados().map((p) => [p.name, p.barcode, this.catName(p) ?? '', this.store.supplier(p.supplierId)?.name ?? '', this.precioVer(p), p.cost, this.store.stockOf(p)])];
+    const url = URL.createObjectURL(new Blob([filas.map((r) => r.join(';')).join('\n')], { type: 'text/csv' }));
+    const a = document.createElement('a'); a.href = url; a.download = 'stock.csv'; a.click(); URL.revokeObjectURL(url);
+  }
+  imprimir() { window.print(); }
   readonly selected = signal<string[]>([]);
   readonly menu = signal('');
   readonly editing = signal('');
