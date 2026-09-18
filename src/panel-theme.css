@@ -9,6 +9,8 @@
  * Tema: claro. Los tokens viven en `.pnl` (raíz del panel) para poder
  * reasignarlos por tenant (`[data-theme]`) o por modo oscuro (`[data-mode="dark"]`).
  */
+/* Dentro de @layer components para que las utilidades de Tailwind (hidden, sm:flex, !h-8...) le ganen. */
+@layer components {
 .pnl {
   --pnl-bg: #f3f1ed;
   --pnl-surface: rgba(255, 255, 255, 0.6);
@@ -173,3 +175,4 @@
   padding: 10px 32px;
 }
 .pnl-note { display: block; border-radius: 10px; padding: 10px 12px; font-weight: 600; font-size: 13px; }
+}
