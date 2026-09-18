@@ -106,7 +106,7 @@ interface CartLine { productId: string; name: string; qty: number; price: number
                     <tr><th>Cantidad</th><th>Producto</th><th class="right">Precio</th><th class="right">Subtotal</th><th></th></tr>
                     @for (l of cart(); track l.productId; let i = $index) {
                       <tr>
-                        <td><button style="height: 28px" (click)="cant(i, -1)">−</button> <b>{{ l.qty }}</b> <button class="cta" style="height: 28px; border-radius: 99px" (click)="cant(i, 1)">+</button></td>
+                        <td><span class="qty"><button type="button" (click)="cant(i, -1)" aria-label="Restar uno"><i class="fa-solid fa-minus"></i></button><b>{{ l.qty }}</b><button type="button" class="mas" (click)="cant(i, 1)" aria-label="Sumar uno"><i class="fa-solid fa-plus"></i></button></span></td>
                         <td><b>{{ l.name }}</b>@if (l.discountUnit > 0) { <br /><small class="pos">Descuento -{{ l.discountUnit | money }} c/u</small> }</td>
                         <td class="right">{{ l.price - l.discountUnit | money }}</td>
                         <td class="right"><b>{{ (l.price - l.discountUnit) * l.qty | money }}</b></td>

@@ -46,3 +46,4 @@ Estados: ⬜ pendiente · 🔄 en curso · ✅ hecho · ⏸ diferido a propósit
 | Cobro en efectivo: **dinero recibido y vuelto** (el cajero no calcula) | ✅ | 2026-09-18 | En el cobro, «Dinero recibido» con atajos de billetes (Exacto y los más cercanos), vuelto en verde o «faltan» en rojo; no deja guardar si falta plata (sólo en efectivo); aviso «Vuelto $X» al guardar y el ticket imprime recibido y vuelto. |
 | Caja: botón **Lector** visible junto al de la cámara | ✅ | 2026-09-18 | El ícono de código de barras abre el modo «esperando el lector»; la cámara tiene su propio ícono. Igual que en el alta de producto. |
 - 2026-09-18: ✅ pedidos del usuario: vuelto en el cobro y botón de lector en la caja.
+| Carrito de la caja: botones − / + de cantidad demasiado grandes (tapaban el número) | ✅ | 2026-09-18 | Ahora son botones redondos de 28 px con el número en el medio (`.qty`). |
