@@ -35,7 +35,7 @@ npm start        # http://localhost:4200
 | F5 | Cuentas y saldos (libro, cheques, centros de costos) | `vistas/07`, `ANALISIS_tesoreria.md` | ✅ |
 | F6 | Cierres de caja (turnos, diferencias por empleado, verificado) | `vistas/12`, `ANALISIS_caja.md` | ✅ |
 | F7 | Compras y pedidos (asistente 3 pasos, recepción) | `vistas/06`, `ANALISIS_facturas_compras.md` | ✅ |
-| F8 | Presupuestos y facturas | `vistas/14` | ⬜ |
+| F8 | Presupuestos y facturas | `vistas/14` | ✅ |
 | F9 | Reportes (6 pestañas) | `vistas/04` | ⬜ |
 | F10 | Empleados, horas, categorías, ajustes | `vistas/09`, `10`, `11` | ⬜ |
 | F11 | Login y conexión con la API (reemplaza los datos de muestra) | — | ⬜ |
@@ -47,3 +47,4 @@ npm start        # http://localhost:4200
 - **F4** (2026-09-18): `pages/partes` (un componente para `/clientes` y `/proveedores`, según la ruta): KPIs, listado, ficha con saldo corrido, alta/edición, «Registrar movimiento» con saldo resultante en vivo (cliente: pago/devolución/aumento de deuda; proveedor: pago/compra/nota de crédito/ajuste; el pago mueve dinero de la cuenta elegida). Verificado que renderiza en el navegador.
 - **F5/F6** (2026-09-18): `pages/cuentas` (KPIs, cuentas caja/banco con alta/edición, libro de movimientos con filtro, ingreso/egreso con subcategoría obligatoria, movimiento entre cuentas, cheques a cobrar/pagar con resumen anual, centros de costos con 4 criterios y costos fijos) y `pages/cierres` (turnos con apertura/cierre/diferencia, alerta por umbral, verificado, notas, diferencias por empleado). Verificado: la venta hecha en la caja aparece como ingreso en Cuentas.
 - **F7** (2026-09-18): `pages/compras`: KPIs, listado, asistente (proveedor → productos con último costo/variación % → resumen con PDF por impresión, CSV, copiar texto), guardado como Borrador, «Confirmar que lo envié» → Pedido, detalle y «Registrar recepción» (sube stock, actualiza costo, egreso de la cuenta si está pago o deuda con el proveedor). Pendiente: transferencias de stock entre depósitos (requieren depósitos, ver Ajustes).
+- **F8** (2026-09-18): `pages/presupuestos` (KPIs, estados activo/vencido/vendido/rechazado/archivado, alta/edición con IVA 21% incluido, duplicar, imprimir, **convertir a venta** → abre la caja con el carrito y el cliente; al cobrar pasa a Vendido) y `pages/facturas` (facturas de prueba sin validez fiscal; también se generan desde Ventas y desde el cobro). Se agregó `SaleLine.cost/categoryId` (costo congelado al vender) para los reportes.

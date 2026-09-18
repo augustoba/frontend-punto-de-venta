@@ -226,7 +226,7 @@ export class Store {
       const lines: SaleLine[] = i.lines.map((l) => {
         const p = d.products.find((x) => x.id === l.productId)!;
         const base = l.price ?? (p.offer > 0 ? p.offer : p.price);
-        return { productId: p.id, name: p.name, qty: l.qty, price: r2(base), discountUnit: r2(l.discountUnit ?? 0) };
+        return { productId: p.id, name: p.name, qty: l.qty, price: r2(base), discountUnit: r2(l.discountUnit ?? 0), cost: p.combo.length ? r2(p.combo.reduce((t, c) => t + (d.products.find((x) => x.id === c.productId)?.cost ?? 0) * c.qty, 0)) : p.cost, categoryId: p.categoryId };
       });
       const subtotal = r2(lines.reduce((s, l) => s + (l.price - l.discountUnit) * l.qty, 0));
       let pct = i.discountPct;

@@ -52,7 +52,7 @@ export interface PartyEntry {
 }
 
 export type PayMethod = 'Efectivo' | 'Transferencia' | 'Tarjeta' | 'Cuenta corriente';
-export interface SaleLine { productId: string; name: string; qty: number; price: number; discountUnit: number; }
+export interface SaleLine { productId: string; name: string; qty: number; price: number; discountUnit: number; cost: number; categoryId?: string | null; }
 export interface Sale {
   id: string; number: number; at: Iso; seller: string; customerId: string | null;
   lines: SaleLine[]; subtotal: number; discountPct: number; discountAmount: number; total: number;
