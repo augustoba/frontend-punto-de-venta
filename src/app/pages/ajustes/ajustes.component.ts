@@ -35,7 +35,7 @@ const TABS: { id: string; label: string; grupos: Grupo[] }[] = [
       { k: 'exchangeTicket', icon: 'gift', titulo: 'Ticket de cambio', desc: 'Las ventas se pueden marcar como para regalo y salen con un cupón de cambio sin precios.', tipo: 'switch' }] }] },
   { id: 'productos', label: 'Productos y stock', grupos: [
     { titulo: 'Catálogo y precios', sub: 'Cómo se cargan tus productos y con qué valores arranca cada uno nuevo.', items: [
-      { k: 'services', icon: 'briefcase', titulo: 'Servicios', desc: 'Suma la solapa Servicios al catálogo, además de los productos.', tipo: 'switch', pronto: true },
+      { k: 'services', icon: 'briefcase', titulo: 'Servicios', desc: 'Suma la solapa Servicios al catálogo, además de los productos.', tipo: 'switch' },
       { k: 'productImages', icon: 'image', titulo: 'Imágenes de productos', desc: 'Permite cargarle una foto a cada producto y mostrarla en la app.', tipo: 'switch' },
       { k: 'weightSales', icon: 'weight-scale', titulo: 'Venta por peso', desc: 'Vendé por kilo, no solo por unidad.', tipo: 'switch', pronto: true },
       { k: 'markup', icon: 'arrow-trend-up', titulo: 'Remarcación', desc: 'Se aplica sobre el costo para sugerir el precio.', tipo: 'numero', sufijo: '%' },

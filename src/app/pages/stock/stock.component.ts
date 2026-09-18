@@ -20,6 +20,9 @@ type StockFilter = '' | 'ideal' | 'critico' | 'sin';
     <h1>Stock</h1>
     <p class="sub">Cargá productos, gestioná stock y actualizá precios.</p>
 
+    @if (store.settings().services) {
+      <div class="tabs"><span [class.on]="vista() === 'productos'" style="cursor: pointer" (click)="vista.set('productos')">Productos</span><span [class.on]="vista() === 'servicios'" style="cursor: pointer" (click)="vista.set('servicios')">Servicios</span></div>
+    }
     <div class="kpis k3">
       <div class="kpi ic-box"><small>Productos</small><strong>{{ activos().length }}</strong></div>
       <div class="kpi ic-warn"><small>Stock crítico</small><strong>{{ criticos() }}</strong></div>
@@ -97,7 +100,7 @@ type StockFilter = '' | 'ideal' | 'critico' | 'sin';
               <input type="number" style="width: 80px; height: 32px" [ngModel]="editValue" (ngModelChange)="editValue = $event" (keyup.enter)="guardarStock(p)" />
               <button class="link" (click)="guardarStock(p)">✓</button>
             } @else {
-              <span class="badge" [class]="'badge ' + claseStock(p)" [title]="p.combo.length ? 'Derivado de los componentes' : 'Editar stock'" (click)="!p.combo.length && editar(p)" style="cursor: pointer">● {{ store.stockOf(p) }}</span>
+              <span class="badge" [class]="'badge ' + claseStock(p)" [title]="p.combo.length ? 'Derivado de los componentes' : 'Editar stock'" (click)="!p.combo.length && !p.service && editar(p)" style="cursor: pointer">● {{ p.service ? '—' : store.stockOf(p) }}</span>
             }
           </td>
           <td class="right">
@@ -165,11 +168,16 @@ type StockFilter = '' | 'ideal' | 'critico' | 'sin';
           @if (!f.combo) { <div class="field"><label>Costo</label><input type="number" [(ngModel)]="f.cost" /></div> }
           <div class="field"><label>Precio de venta (IVA incl.)</label><input type="number" [(ngModel)]="f.price" /></div>
           <div class="field"><label>Precio de oferta (0 = sin oferta)</label><input type="number" [(ngModel)]="f.offer" /></div>
+          @if (store.settings().services && !f.combo) {
+            <div class="field" style="grid-column: 1 / -1"><label class="check"><input type="checkbox" [(ngModel)]="f.service" />Es un servicio (no lleva stock)</label></div>
+          }
           @if (!f.combo) {
             <div class="field"><label>Margen</label><input disabled [value]="margen(f)" /></div>
-            @if (!f.id) { <div class="field"><label>Stock inicial</label><input type="number" [(ngModel)]="f.stock" /></div> }
-            <div class="field"><label>Alerta de stock bajo</label><input type="number" [(ngModel)]="f.lowStock" /></div>
-            <div class="field"><label>Stock ideal</label><input type="number" [(ngModel)]="f.idealStock" /></div>
+            @if (!f.service) {
+              @if (!f.id) { <div class="field"><label>Stock inicial</label><input type="number" [(ngModel)]="f.stock" /></div> }
+              <div class="field"><label>Alerta de stock bajo</label><input type="number" [(ngModel)]="f.lowStock" /></div>
+              <div class="field"><label>Stock ideal</label><input type="number" [(ngModel)]="f.idealStock" /></div>
+            }
             <div class="field"><label>IVA</label><select [(ngModel)]="f.iva"><option [ngValue]="21">21 %</option><option [ngValue]="10.5">10,5 %</option><option [ngValue]="0">Exento</option></select></div>
           }
         </div>
@@ -319,7 +327,8 @@ export class StockComponent {
   importText = '';
   importHeader = true;
 
-  readonly activos = computed(() => this.store.db().products.filter((p) => !p.archived));
+  readonly vista = signal<'productos' | 'servicios'>('productos');
+  readonly activos = computed(() => this.store.db().products.filter((p) => !p.archived && !p.service));
   private estado(p: Product): StockFilter {
     const s = this.store.stockOf(p);
     if (s <= 0) return 'sin';
@@ -335,6 +344,7 @@ export class StockComponent {
     const q = this.q().trim().toLowerCase();
     return this.store.db().products.filter((p) =>
       (this.fArchived() === 'si') === p.archived &&
+      (!this.store.settings().services || (this.vista() === 'servicios') === !!p.service) &&
       (!q || p.name.toLowerCase().includes(q) || p.barcode.includes(q)) &&
       (!this.fStock() || (this.fStock() === 'critico' ? ['critico', 'sin'].includes(this.estado(p)) : this.estado(p) === this.fStock())) &&
       (!this.fSupplier() || p.supplierId === this.fSupplier()) && (!this.fCat() || p.categoryId === this.fCat()));
@@ -342,7 +352,7 @@ export class StockComponent {
   readonly simples = computed(() => this.store.db().products.filter((p) => !p.combo.length && !p.archived));
   readonly todosMarcados = computed(() => this.filtrados().length > 0 && this.filtrados().every((p) => this.selected().includes(p.id)));
   catName(p: Product): string { return this.store.categories().find((c) => c.id === p.categoryId)?.name ?? ''; }
-  claseStock(p: Product): string { const e = this.estado(p); return e === 'sin' ? 'b-red' : e === 'critico' ? 'b-amber' : 'b-green'; }
+  claseStock(p: Product): string { if (p.service) return 'b-gray'; const e = this.estado(p); return e === 'sin' ? 'b-red' : e === 'critico' ? 'b-amber' : 'b-green'; }
   marcar(id: string, on: boolean) { this.selected.update((s) => (on ? [...s, id] : s.filter((x) => x !== id))); }
   marcarTodos(on: boolean) { this.selected.set(on ? this.filtrados().map((p) => p.id) : []); }
   eliminar() { this.store.deleteProducts(this.selected()); this.selected.set([]); }
@@ -350,7 +360,7 @@ export class StockComponent {
   editar(p: Product) { this.editing.set(p.id); this.editValue = p.stock; }
   guardarStock(p: Product) { this.store.setStock(p.id, Number(this.editValue)); this.editing.set(''); }
 
-  openNew() { this.form.set({ combo: false, name: '', barcode: '', categoryId: null, supplierId: null, cost: 0, price: 0, offer: 0, stock: 0, lowStock: 0, idealStock: 0, iva: this.store.settings().defaultIva, comboItems: [] }); }
+  openNew() { this.form.set({ service: this.vista() === 'servicios', combo: false, name: '', barcode: '', categoryId: null, supplierId: null, cost: 0, price: 0, offer: 0, stock: 0, lowStock: 0, idealStock: 0, iva: this.store.settings().defaultIva, comboItems: [] }); }
   openCombo() { this.form.set({ combo: true, name: '', barcode: '', categoryId: null, supplierId: null, cost: 0, price: 0, offer: 0, stock: 0, lowStock: 0, idealStock: 0, iva: 21, comboItems: [{ productId: '', qty: 1 }] }); }
   openEdit(p: Product) { this.form.set({ ...p, combo: p.combo.length > 0, comboItems: p.combo.map((c) => ({ ...c })) }); }
   margen(f: any): string { return f.cost > 0 ? `${Math.round(((f.price - f.cost) / f.cost) * 100)} %` : '—'; }
@@ -359,7 +369,7 @@ export class StockComponent {
   }
   guardar(f: any) {
     const combo = f.combo ? f.comboItems.filter((c: any) => c.productId && c.qty > 0) : [];
-    const base = { image: f.image ?? '', name: f.name.trim(), barcode: f.barcode, categoryId: f.categoryId, supplierId: f.supplierId, cost: +f.cost || 0, price: +f.price || 0, offer: +f.offer || 0, lowStock: +f.lowStock || 0, idealStock: +f.idealStock || 0, iva: f.iva, combo };
+    const base = { image: f.image ?? '', service: !!f.service, name: f.name.trim(), barcode: f.barcode, categoryId: f.categoryId, supplierId: f.supplierId, cost: +f.cost || 0, price: +f.price || 0, offer: +f.offer || 0, lowStock: +f.lowStock || 0, idealStock: +f.idealStock || 0, iva: f.iva, combo };
     this.store.saveProduct(f.id ? { id: f.id, ...base } : base, f.id ? 0 : +f.stock || 0);
     this.form.set(null);
   }

@@ -21,6 +21,7 @@ export interface Product {
   iva: number;          // 21, 10.5, 0
   archived: boolean;
   image: string;        // foto (data URL); '' = sin foto
+  service: boolean;     // servicio: se vende pero no lleva stock
   combo: ComboItem[];   // si tiene ítems es un combo: su stock se deriva de los componentes
   createdAt: Iso;
 }

@@ -239,7 +239,7 @@ export class Store {
         Object.assign(x, p); return x.id;
       }
       const np: Product = {
-        id: this.newId(d, 'p'), image: '', barcode: '', categoryId: null, supplierId: null, cost: 0, price: 0, offer: 0, stock: 0,
+        id: this.newId(d, 'p'), image: '', service: false, barcode: '', categoryId: null, supplierId: null, cost: 0, price: 0, offer: 0, stock: 0,
         lowStock: 0, idealStock: 0, iva: d.settings.defaultIva, archived: false, combo: [], createdAt: nowIso(), ...p,
       } as Product;
       np.stock = 0; d.products.push(np);
@@ -248,7 +248,7 @@ export class Store {
     });
   }
   private moveStock(d: Db, p: Product, delta: number, reason: StockReason, ref: string): void {
-    if (!delta) return;
+    if (!delta || p.service) return;   // los servicios no llevan stock
     const prev = p.stock; p.stock = prev + delta;
     d.stockMoves.push({ id: this.newId(d, 'sm'), productId: p.id, at: nowIso(), prev, delta, result: p.stock, reason, ref, user: d.user });
   }

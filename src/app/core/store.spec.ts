@@ -131,4 +131,13 @@ describe('Store', () => {
     expect(s.product(id)!.price).toBe(1100);
     expect(s.db().priceChanges.length).toBe(1);
   });
+
+  it('un servicio se vende sin llevar stock ni generar movimientos', () => {
+    const id = s.saveProduct({ name: 'Corte', price: 3000, cost: 0, service: true }, 5);
+    expect(s.product(id)!.stock).toBe(0);
+    s.registerSale({ customerId: null, lines: [{ productId: id, qty: 2 }], discountPct: 0, method: 'Efectivo', paid: true, notes: '', invoice: false });
+    expect(s.product(id)!.stock).toBe(0);
+    expect(s.db().stockMoves.filter((m) => m.productId === id).length).toBe(0);
+    expect(s.balanceOfAccount(s.db().accounts[0].id)).toBe(6000);
+  });
 });
