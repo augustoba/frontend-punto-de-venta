@@ -15,6 +15,12 @@ export interface NavGroup {
 
 export const NAV: NavGroup[] = [
   {
+    title: 'Inicio',
+    items: [
+      { label: 'Dashboard', path: 'dashboard', subtitle: 'Resumen de tu negocio.', icon: 'gauge-high' },
+    ],
+  },
+  {
     title: 'Análisis',
     items: [
       { label: 'Reportes', path: 'reportes', subtitle: 'Analizá el rendimiento de tu negocio con reportes.', icon: 'chart-line' },

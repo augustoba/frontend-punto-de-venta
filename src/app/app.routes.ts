@@ -6,6 +6,7 @@ import { authGuard } from './core/auth';
 
 /** Pantallas ya construidas (el resto usa PlaceholderComponent). */
 const BUILT: Record<string, () => Promise<any>> = {
+  dashboard: () => import('./pages/dashboard/dashboard.component').then((m) => m.DashboardComponent),
   ventas: () => import('./pages/ventas/ventas.component').then((m) => m.VentasComponent),
   stock: () => import('./pages/stock/stock.component').then((m) => m.StockComponent),
   cuentas: () => import('./pages/cuentas/cuentas.component').then((m) => m.CuentasComponent),
@@ -36,7 +37,7 @@ export const routes: Routes = [
     component: ShellComponent,
     canActivate: [authGuard],
     children: [
-      { path: '', pathMatch: 'full', redirectTo: 'ventas' },
+      { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
       ...ALL_ITEMS.map((i) =>
         BUILT[i.path]
           ? { path: i.path, loadComponent: BUILT[i.path], title: `${i.label} - Punto de venta` }
