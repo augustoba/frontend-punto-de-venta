@@ -1,6 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MoneyPipe } from '../../shared/format';
+import { FdatePipe, FtimePipe, MoneyPipe } from '../../shared/format';
 import { Store, r2 } from '../../core/store';
 import { Sale } from '../../core/models';
 
@@ -14,7 +14,7 @@ const ymd = (iso: string) => iso.slice(0, 10);
 /** Reportes (réplica de Envi): Ventas, Tesorería, Stock, Productos, Clientes y Rentabilidad. */
 @Component({
   selector: 'app-reportes',
-  imports: [FormsModule, MoneyPipe],
+  imports: [FormsModule, MoneyPipe, FdatePipe, FtimePipe],
   template: `
     <h1>Reportes</h1>
     <p class="sub">Analizá el rendimiento de tu negocio con reportes.</p>
@@ -24,20 +24,68 @@ const ymd = (iso: string) => iso.slice(0, 10);
 
     @switch (tab()) {
       @case ('ventas') {
-        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 16px">
-          <div class="card"><b>Ventas por medio de pago</b>
-            <div class="row" style="margin: 6px 0"><button style="height: 28px" (click)="dia.set(dia() - 1)">←</button><span>{{ fechaDia() }}</span><button style="height: 28px" (click)="dia.set(dia() + 1)">→</button>
-              <span class="grow"></span><label class="row"><input type="checkbox" style="height: auto" [ngModel]="soloCobradas()" (ngModelChange)="soloCobradas.set($event)" /> Sólo los cobrados</label></div>
-            <p><b>Total:</b> {{ totalDia() | money }} · ({{ ventasDia().length }} {{ ventasDia().length === 1 ? 'venta' : 'ventas' }})</p>
-            @if (ventasDia().length) { <div style="width: 160px; height: 160px; border-radius: 50%; margin: 10px auto" [style.background]="torta()"></div> } @else { <p class="empty">Sin ventas para este día.</p> }
-            <p class="right muted">Promedio por venta <b>{{ promedioDia() | money }}</b></p>
-            <table style="background: none">@for (m of porMedio(); track m.nombre) { <tr><td><span class="badge" [style.background]="m.color" style="width: 10px; height: 10px; padding: 0"></span> <b>{{ m.nombre }}</b></td><td class="right">{{ m.total | money }} · ({{ m.n }} {{ m.n === 1 ? 'venta' : 'ventas' }})</td></tr> }</table></div>
-          <div>
-            <div class="card" style="margin-bottom: 12px"><b>Ventas por día</b> <span class="badge sel" style="float: right">{{ totalDia() | money }}</span><br /><small class="muted">{{ ventasDia().length }} ventas · {{ productosDe(ventasDia()) }} productos</small><br /><small class="muted">Comisión {{ store.settings().sellerCommission }}%: {{ comision(totalDia()) | money }}</small></div>
-            <div class="card" style="margin-bottom: 12px"><b>Ventas por semana</b> <span class="badge sel" style="float: right">{{ totalSemana() | money }}</span><br /><small class="muted">{{ ventasSemana().length }} ventas · {{ productosDe(ventasSemana()) }} productos</small><br /><small class="muted">Comisión: {{ comision(totalSemana()) | money }}</small></div>
-            <div class="card"><b>Ventas por mes</b> <span class="badge sel" style="float: right">{{ totalMes() | money }}</span>
-              <div class="row"><button style="height: 28px" (click)="mesOff.set(mesOff() - 1)">←</button><span>{{ nombreMes() }}</span><button style="height: 28px" (click)="mesOff.set(mesOff() + 1)">→</button></div>
-              <small class="muted">{{ ventasMes().length }} ventas · {{ productosDe(ventasMes()) }} productos · Comisión: {{ comision(totalMes()) | money }}</small></div>
+        <div class="rep-grid">
+          <div class="card">
+            <div class="row between"><b style="font-size: 16px">Ventas por medio de pago</b></div>
+            <div class="rep-head">
+              <span class="datenav">
+                @if (!rango()) { <button (click)="dia.set(dia() - 1)"><i class="fa-solid fa-arrow-left"></i></button><span>{{ fechaDia() }}</span><button (click)="dia.set(dia() + 1)"><i class="fa-solid fa-arrow-right"></i></button> }
+                @else { <input type="date" [ngModel]="rDesde()" (ngModelChange)="rDesde.set($event)" /><span>–</span><input type="date" [ngModel]="rHasta()" (ngModelChange)="rHasta.set($event)" /> }
+              </span>
+              <a class="period-link" (click)="rango.set(!rango())"><i class="fa-solid fa-right-left"></i>{{ rango() ? 'Volver al día' : 'Filtrar por período' }}</a>
+            </div>
+            <div class="row between" style="margin: 4px 0 10px">
+              <span><b>Total:</b> {{ totalDia() | money }} &nbsp;-&nbsp; ({{ ventasDia().length }} {{ ventasDia().length === 1 ? 'venta' : 'ventas' }})</span>
+              <label class="check"><input type="checkbox" [ngModel]="soloCobradas()" (ngModelChange)="soloCobradas.set($event)" />Sólo los cobrados</label>
+            </div>
+            @if (ventasDia().length) { <div class="pie" [style.background]="torta()"></div> } @else { <p class="empty">Sin ventas para este período.</p> }
+            <div class="row between" style="margin-top: 14px">
+              <button class="iconbtn plain" title="Actualizar" (click)="refrescar()"><i class="fa-solid fa-rotate-right"></i></button>
+              <span style="text-align: right"><a class="link" style="font-size: 11px" (click)="toggleCom('medio')">Ver Comisión</a><br />
+                <span class="chipgray">Promedio por venta &nbsp; {{ promedioDia() | money }}</span></span>
+            </div>
+            @if (verCom()['medio']) { <p class="sub" style="text-align: right; margin: 4px 0">Comisión {{ pctCom() }}%: <b>{{ comision(totalDia()) | money }}</b></p> }
+            @for (m of porMedio(); track m.nombre) {
+              <div class="medio-row" (click)="medioAbierto.set(medioAbierto() === m.nombre ? '' : m.nombre)">
+                <span><i class="dot" [style.background]="m.color"></i><b>{{ m.nombre }}</b></span>
+                <span>{{ m.total | money }} &nbsp;-&nbsp; ({{ m.n }} {{ m.n === 1 ? 'venta' : 'ventas' }}) <i class="fa-solid fa-chevron-down chev" [class.up]="medioAbierto() === m.nombre"></i></span>
+              </div>
+              @if (medioAbierto() === m.nombre) {
+                <table class="mini">@for (s of ventasDeMedio(m.nombre); track s.id) { <tr><td>#{{ s.number }}</td><td>{{ s.at | fdate }} {{ s.at | ftime }}</td><td>{{ store.customerName(s.customerId) }}</td><td class="right">{{ s.total | money }}</td></tr> }</table>
+              }
+            }
+          </div>
+          <div class="rep-side">
+            <div class="card side-card">
+              <div class="row between"><b>Ventas por día</b><span class="pill-dark">{{ totalDiaCard() | money }}</span></div>
+              <div class="row between" style="margin-top: 10px">
+                <span class="datenav sm"><button (click)="diaCard.set(diaCard() - 1)"><i class="fa-solid fa-arrow-left"></i></button><span>{{ fechaDe(diaCard()) }}</span><button (click)="diaCard.set(diaCard() + 1)"><i class="fa-solid fa-arrow-right"></i></button></span>
+                <span class="pills"><span class="pill-blue">{{ ventasDiaCard().length }} Ventas</span><span class="pill-blue">{{ productosDe(ventasDiaCard()) }} Productos</span></span>
+              </div>
+              <button class="com-row" (click)="toggleCom('dia')"><span>Ver comisión</span><span class="muted">{{ comision(totalDiaCard()) | money }} {{ pctCom() }}%</span><i class="fa-solid fa-chevron-down chev" [class.up]="verCom()['dia']"></i></button>
+              @if (verCom()['dia']) { <p class="sub" style="margin: 6px 0 0">Comisión de vendedores sobre las ventas del día.</p> }
+            </div>
+            <div class="card side-card">
+              <div class="row between"><b>Ventas por semana</b><span class="pill-dark">{{ totalSemCard() | money }}</span></div>
+              <div class="row between" style="margin-top: 10px">
+                <span class="datenav sm"><button (click)="semCard.set(semCard() - 1)"><i class="fa-solid fa-arrow-left"></i></button><span>{{ rangoSemana() }}</span><button (click)="semCard.set(semCard() + 1)"><i class="fa-solid fa-arrow-right"></i></button></span>
+                <span class="pills"><span class="pill-blue">{{ ventasSemCard().length }} Ventas</span><span class="pill-blue">{{ productosDe(ventasSemCard()) }} Productos</span></span>
+              </div>
+              <button class="com-row" (click)="toggleCom('sem')"><span>Ver comisión</span><span class="muted">{{ comision(totalSemCard()) | money }} {{ pctCom() }}%</span><i class="fa-solid fa-chevron-down chev" [class.up]="verCom()['sem']"></i></button>
+              @if (verCom()['sem']) { <p class="sub" style="margin: 6px 0 0">Comisión de vendedores sobre las ventas de la semana.</p> }
+            </div>
+            <div class="card side-card">
+              <div class="row between"><b>Ventas por mes</b><span class="pill-dark">{{ totalMes() | money }}</span></div>
+              <div class="row between" style="margin-top: 10px; align-items: flex-start">
+                <span style="display: grid; gap: 6px">
+                  <span class="datenav sq"><button (click)="mesOff.set(mesOff() - 1)"><i class="fa-solid fa-arrow-left"></i></button><span>{{ soloMes() }}</span><button (click)="mesOff.set(mesOff() + 1)"><i class="fa-solid fa-arrow-right"></i></button></span>
+                  <span class="datenav sq"><button (click)="mesOff.set(mesOff() - 12)"><i class="fa-solid fa-arrow-left"></i></button><span>{{ soloAnio() }}</span><button (click)="mesOff.set(mesOff() + 12)"><i class="fa-solid fa-arrow-right"></i></button></span>
+                </span>
+                <span class="pills"><span class="pill-blue">{{ ventasMes().length }} Ventas</span><span class="pill-blue">{{ productosDe(ventasMes()) }} Productos</span></span>
+              </div>
+              <button class="com-row" (click)="toggleCom('mes')"><span>Ver comisión</span><span class="muted">{{ comision(totalMes()) | money }} {{ pctCom() }}%</span><i class="fa-solid fa-chevron-down chev" [class.up]="verCom()['mes']"></i></button>
+              @if (verCom()['mes']) { <p class="sub" style="margin: 6px 0 0">Comisión de vendedores sobre las ventas del mes.</p> }
+            </div>
           </div>
         </div>
         <div class="card" style="margin-top: 16px"><b>Ventas mensuales</b> <small class="muted">{{ nombreMes() }} {{ totalMes() | money }} · mes anterior {{ totalMesAnterior() | money }}</small>
@@ -105,7 +153,7 @@ export class ReportesComponent {
   private diaSel(): Date { const d = this.base(); d.setDate(d.getDate() + this.dia()); return d; }
   fechaDia() { return this.diaSel().toLocaleDateString('es-AR'); }
   private filtrar(ss: Sale[]) { return this.soloCobradas() ? ss.filter((s) => s.paid) : ss; }
-  readonly ventasDia = computed(() => this.filtrar(this.ventas().filter((s) => ymd(s.at) === this.diaSel().toISOString().slice(0, 10) || new Date(s.at).toDateString() === this.diaSel().toDateString())));
+  readonly ventasDia = computed(() => this.rango() ? this.filtrar(this.ventas().filter((s) => ymd(s.at) >= this.rDesde() && ymd(s.at) <= this.rHasta())) : this.filtrar(this.ventas().filter((s) => ymd(s.at) === this.diaSel().toISOString().slice(0, 10) || new Date(s.at).toDateString() === this.diaSel().toDateString())));
   readonly totalDia = computed(() => r2(this.ventasDia().reduce((t, s) => t + s.total, 0)));
   promedioDia() { return this.ventasDia().length ? r2(this.totalDia() / this.ventasDia().length) : 0; }
   readonly porMedio = computed(() => {
@@ -117,6 +165,27 @@ export class ReportesComponent {
     const t = this.porMedio().reduce((s, m) => s + m.total, 0) || 1; let a = 0;
     return `conic-gradient(${this.porMedio().map((m) => { const d = (m.total / t) * 100; const s = `${m.color} ${a}% ${a + d}%`; a += d; return s; }).join(',')})`;
   }
+  // --- Envi: cada tarjeta lateral navega por su cuenta; el período reemplaza al día del gráfico ---
+  readonly rango = signal(false);
+  readonly rDesde = signal(new Date().toISOString().slice(0, 10)); readonly rHasta = signal(new Date().toISOString().slice(0, 10));
+  readonly medioAbierto = signal('');
+  readonly verCom = signal<Record<string, boolean>>({});
+  readonly diaCard = signal(0); readonly semCard = signal(0);
+  toggleCom(k: string) { this.verCom.update((v) => ({ ...v, [k]: !v[k] })); }
+  pctCom() { return this.store.settings().sellerCommission; }
+  refrescar() { if (this.store.remote()) this.store.sync(); }
+  ventasDeMedio(nombre: string) { return this.ventasDia().filter((s) => s.method === nombre); }
+  private diaDe(off: number): Date { const d = this.base(); d.setDate(d.getDate() + off); return d; }
+  fechaDe(off: number) { const d = this.diaDe(off); return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getFullYear()).slice(2)}`; }
+  readonly ventasDiaCard = computed(() => { const d = this.diaDe(this.diaCard()).toDateString(); return this.filtrar(this.ventas().filter((s) => new Date(s.at).toDateString() === d)); });
+  readonly totalDiaCard = computed(() => r2(this.ventasDiaCard().reduce((t, s) => t + s.total, 0)));
+  private semanaIni(): Date { const d = this.diaDe(this.semCard() * 7), dow = (d.getDay() + 6) % 7; const ini = new Date(d); ini.setDate(d.getDate() - dow); ini.setHours(0, 0, 0, 0); return ini; }
+  rangoSemana() { const i = this.semanaIni(), f = new Date(i); f.setDate(i.getDate() + 6); const fm = (d: Date) => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getFullYear()).slice(2)}`; return `${fm(i)} - ${fm(f)}`; }
+  readonly ventasSemCard = computed(() => { const ini = this.semanaIni(), fin = new Date(ini); fin.setDate(ini.getDate() + 7); return this.filtrar(this.ventas().filter((s) => { const x = new Date(s.at); return x >= ini && x < fin; })); });
+  readonly totalSemCard = computed(() => r2(this.ventasSemCard().reduce((t, s) => t + s.total, 0)));
+  soloMes() { return MESES[this.mesSel().getMonth()]; }
+  soloAnio() { return String(this.mesSel().getFullYear()); }
+
   productosDe(ss: Sale[]) { return ss.reduce((t, s) => t + s.lines.reduce((x, l) => x + l.qty, 0), 0); }
   comision(n: number) { return r2((n * this.store.settings().sellerCommission) / 100); }
   readonly ventasSemana = computed(() => {
