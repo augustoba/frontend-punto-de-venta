@@ -88,3 +88,4 @@ de `ProductService`. Para conectarlo a una API real:
 - Angular 19 (standalone components, signals)
 - Tailwind CSS v4
 - Sin dependencias de pasarela de pago
+# frontend-punto-de-venta
