@@ -2,6 +2,8 @@
 /* Mapa del checkout (address-picker). Se importa acá y no en angular.json para
    que el dev-server lo tome sin reiniciar. */
 @import "leaflet/dist/leaflet.css";
+/* Sistema de diseño del panel (opt-in, clases `pnl-*`) — ver docs/ROADMAP_ENVI.md */
+@import "./panel-theme.css";
 
 /*
  * Modo oscuro manual (no sigue el SO): `dark:` se activa con el atributo
