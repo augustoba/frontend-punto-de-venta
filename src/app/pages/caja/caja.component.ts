@@ -56,8 +56,10 @@ interface CartLine { productId: string; name: string; qty: number; price: number
                 <span class="lector" [class.off]="!lectorActivo()" [title]="lectorActivo() ? 'Escaneá un código de barras en cualquier momento' : 'El lector se pausa mientras hay una ventana abierta'"><i class="dot"></i>{{ lectorActivo() ? 'LECTOR ACTIVO' : 'LECTOR EN PAUSA' }}</span></div>
               <button class="rapida" [class.on]="rapidaOn()" (click)="rapidaOn.set(!rapidaOn())" title="Modo rápido: F8 guarda la venta en efectivo sin preguntar"><i class="fa-solid fa-bolt"></i>Rápida<kbd>F1</kbd></button>
               <div class="field" style="margin-top: 10px"><label>Buscar</label>
-                <div class="search-wrap" data-tour="buscar"><input #buscador class="search" placeholder="Nombre o código" [ngModel]="q()" (ngModelChange)="q.set($event)" (keydown.enter)="enter()" (keydown.escape)="q.set('')" style="width: 100%" />
-                  <button class="bc" (click)="camara.set(true)" title="Escanear código de barras con la cámara"><i class="fa-solid fa-barcode"></i></button></div></div>
+                <div class="search-wrap barcode-in" data-tour="buscar" [class.esperando]="esperandoLector()"><input #buscador class="search" placeholder="Nombre o código" [ngModel]="q()" (ngModelChange)="q.set($event)" (keydown.enter)="enter()" (keydown.escape)="q.set('')" style="width: 100%" />
+                  <button class="bc2" [class.on]="esperandoLector()" (click)="esperarLector()" title="Escanear con lector de mano"><i class="fa-solid fa-barcode"></i></button>
+                  <button class="bc" (click)="camara.set(true)" title="Escanear con la cámara"><i class="fa-solid fa-camera"></i></button></div>
+                @if (esperandoLector()) { <small class="lector-on"><i class="fa-solid fa-satellite-dish"></i> Esperando el lector: escaneá el producto…</small> }</div>
               @if (aviso() && !camara()) { <p class="sub" style="margin: 8px 0 0" [style.color]="avisoOk() ? '#1f7a4d' : '#8a1c1c'">{{ aviso() }}</p> }
             </div>
             <div class="card" style="margin-top: 12px" data-tour="lista"><div class="field"><label>Lista de precios</label>
@@ -177,11 +179,21 @@ interface CartLine { productId: string; name: string; qty: number; price: number
             <label class="row" style="justify-content: space-between">Ticket de cambio (para regalo) <span class="sw" [class.on]="c.gift" (click)="c.gift = !c.gift"></span></label>
           }
         </div>
+        @if (c.method === 'Efectivo' && c.paid) {
+          <div class="recibido">
+            <div class="field"><label>Dinero recibido</label><input type="number" min="0" [(ngModel)]="c.recibido" placeholder="Con cuánto paga el cliente" /></div>
+            <div class="billetes"><button (click)="c.recibido = totalCobro(c)">Exacto</button>@for (b of billetes(totalCobro(c)); track b) { <button (click)="c.recibido = b">{{ b | money }}</button> }</div>
+            @if (+c.recibido > 0) {
+              @if (vuelto(c) >= 0) { <div class="vuelto"><small>VUELTO A DAR</small><strong>{{ vuelto(c) | money }}</strong></div> }
+              @else { <div class="vuelto falta"><small>FALTAN</small><strong>{{ -vuelto(c) | money }}</strong></div> }
+            }
+          </div>
+        }
         <div class="field" style="margin-top: 10px"><label>Notas</label><textarea style="width: 100%; height: 60px; border: 1px solid var(--control-border-color); border-radius: 12px; padding: 8px" [(ngModel)]="c.notes" placeholder="Agregá una nota para esta venta"></textarea></div>
         @if (error()) { <span class="note bad">{{ error() }}</span> }
         <div class="mf" style="justify-content: space-between">
           <div><small class="muted">TOTAL A COBRAR</small><br /><strong style="font-size: 24px">{{ totalCobro(c) | money }}</strong></div>
-          <div class="row"><button (click)="cobro.set(null)">Cancelar</button><button class="cta" (click)="guardar(c)">Guardar</button></div>
+          <div class="row"><button (click)="cobro.set(null)">Cancelar</button><button class="cta" [disabled]="faltaPlata(c)" (click)="guardar(c)">Guardar</button></div>
         </div>
       </app-modal>
     }
@@ -273,6 +285,13 @@ export class CajaComponent implements OnInit, AfterViewInit {
   readonly metodos: PayMethod[] = ['Efectivo', 'Transferencia', 'Tarjeta'];
   readonly q = signal('');
   readonly camara = signal(false);
+  readonly esperandoLector = signal(false);
+  private lectorTimer?: ReturnType<typeof setTimeout>;
+  /** Deja el buscador enfocado y avisa que se espera un escaneo (el lector de mano escribe el código y cierra con Enter). */
+  esperarLector() {
+    this.esperandoLector.set(true); this.buscador?.nativeElement.focus();
+    clearTimeout(this.lectorTimer); this.lectorTimer = setTimeout(() => this.esperandoLector.set(false), 12000);
+  }
   // --- POS estilo Ventario: recargo, grilla, accesos rápidos, modo rápido y atajos F ---
   readonly ajusteGlobal = signal(0);                       // > 0 descuento, < 0 recargo (se carga al cobrar)
   readonly tipoAjuste = signal<'descuento' | 'recargo'>('descuento');
@@ -433,7 +452,7 @@ export class CajaComponent implements OnInit, AfterViewInit {
     }
   }
   private decir(msg: string, ok: boolean) {
-    this.aviso.set(msg); this.avisoOk.set(ok); beep(ok);
+    this.aviso.set(msg); this.avisoOk.set(ok); beep(ok); this.esperandoLector.set(false);
     clearTimeout(this.avisoTimer);
     this.avisoTimer = setTimeout(() => this.aviso.set(''), 4000);
   }
@@ -480,7 +499,7 @@ export class CajaComponent implements OnInit, AfterViewInit {
   // cobro
   abrirCobro(customerId: string | null = null) {
     this.error.set('');
-    this.cobro.set({ customerId, method: 'Efectivo' as PayMethod, paid: true, discountPct: this.ajusteGlobal(), invoice: false, print: this.store.settings().receiptAction === 'imprimir', gift: false, notes: '' });
+    this.cobro.set({ customerId, method: 'Efectivo' as PayMethod, paid: true, discountPct: this.ajusteGlobal(), recibido: null, invoice: false, print: this.store.settings().receiptAction === 'imprimir', gift: false, notes: '' });
   }
   elegirCliente(v: string | null) {
     const c = this.cobro();
@@ -492,6 +511,17 @@ export class CajaComponent implements OnInit, AfterViewInit {
     catch (e: any) { this.error.set(e.message ?? 'No se pudo crear el cliente'); }
   }
   togglePago(c: any) { c.paid = !c.paid; }
+  /** Vuelto = dinero recibido − total a cobrar (negativo = falta plata). */
+  /** Sólo aplica al pago en efectivo: si lo recibido no alcanza, no deja guardar. */
+  faltaPlata(c: any): boolean { return c.method === 'Efectivo' && c.paid && +c.recibido > 0 && this.vuelto(c) < 0; }
+  vuelto(c: any): number { return r2((+c.recibido || 0) - this.totalCobro(c)); }
+  dinero(n: number): string { return '$ ' + n.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  /** Billetes sugeridos: los más cercanos que alcanzan para pagar el total. */
+  billetes(total: number): number[] {
+    const den = [100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000];
+    const alcanzan = den.filter((d) => d >= total).slice(0, 3);
+    return alcanzan.length ? alcanzan : [Math.ceil(total / 1000) * 1000];
+  }
   autoPct(c: any): number { const s = this.store.settings(); return c.method === 'Transferencia' && c.paid && s.transferDiscount > 0 ? s.transferDiscount : 0; }
   totalCobro(c: any): number { const pct = c.discountPct < 0 ? c.discountPct : Math.max(c.discountPct, this.autoPct(c)); return r2(this.subtotal() * (1 - pct / 100)); }
   async guardar(c: any) {
@@ -500,14 +530,16 @@ export class CajaComponent implements OnInit, AfterViewInit {
         customerId: c.customerId, lines: this.cart().map((l) => ({ productId: l.productId, qty: l.qty, price: l.price, discountUnit: l.discountUnit })),
         discountPct: c.discountPct, method: c.method, paid: c.paid, notes: c.notes, invoice: c.invoice, budgetId: this.budgetId, priceListId: this.listaId(),
       });
-      if (c.print) this.imprimir(s.number, false);
+      const pagoEfectivo = c.method === 'Efectivo' && c.paid && +c.recibido > 0 ? { recibido: +c.recibido, vuelto: r2(+c.recibido - s.total) } : undefined;
+      if (pagoEfectivo) this.decir(`✔ Venta #${s.number} guardada · Vuelto ${this.dinero(pagoEfectivo.vuelto)}`, true);
+      if (c.print) this.imprimir(s.number, false, pagoEfectivo);
       if (c.gift) this.imprimir(s.number, true);
       this.cobro.set(null); this.cart.set([]); this.budgetId = null; this.ajusteGlobal.set(0);
       if (this.route.snapshot.queryParamMap.get('presupuesto')) this.router.navigate(['/caja']);
     } catch (e: any) { this.error.set(e.message ?? 'No se pudo guardar la venta'); }
   }
   /** Comprobante según los ajustes: formato (A4 / ticket 80 mm / 58 mm) y calidad; `regalo` = ticket de cambio sin precios. */
-  private imprimir(n: number, regalo: boolean) {
+  private imprimir(n: number, regalo: boolean, pago?: { recibido: number; vuelto: number }) {
     const s = this.store.db().sales.find((x) => x.number === n); if (!s) return;
     const cfg = this.store.settings();
     const ancho = { a4: 794, ticket80: 302, ticket58: 219 }[cfg.receiptFormat] ?? 302;
@@ -515,7 +547,7 @@ export class CajaComponent implements OnInit, AfterViewInit {
     const peso = cfg.receiptQuality === 'baja' ? 800 : 500, esc = (x: string) => x.replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c] as string));
     const lineas = s.lines.map((l) => regalo ? `${l.qty} x ${esc(l.name)}` : `${l.qty} x ${esc(l.name)}  ${((l.price - l.discountUnit) * l.qty).toFixed(2)}`).join('\n');
     const contacto = [cfg.address, cfg.city, cfg.phone].filter(Boolean).map(esc).join(' · ');
-    w.document.write(`<pre style="font-family:monospace;font-weight:${peso};width:${ancho}px;white-space:pre-wrap;margin:0 auto">${esc(cfg.businessName)}${contacto ? '\n' + contacto : ''}\n${regalo ? 'TICKET DE CAMBIO' : 'Venta #' + s.number}${regalo ? '\nVenta #' + s.number : ''}\n${new Date(s.at).toLocaleString('es-AR')}\n----------------\n${lineas}\n----------------\n${regalo ? 'Presentá este cupón para el cambio.' : 'TOTAL ' + s.total.toFixed(2) + '\n' + s.method}</pre>`);
+    w.document.write(`<pre style="font-family:monospace;font-weight:${peso};width:${ancho}px;white-space:pre-wrap;margin:0 auto">${esc(cfg.businessName)}${contacto ? '\n' + contacto : ''}\n${regalo ? 'TICKET DE CAMBIO' : 'Venta #' + s.number}${regalo ? '\nVenta #' + s.number : ''}\n${new Date(s.at).toLocaleString('es-AR')}\n----------------\n${lineas}\n----------------\n${regalo ? 'Presentá este cupón para el cambio.' : 'TOTAL ' + s.total.toFixed(2) + '\n' + s.method + (pago ? '\nRECIBIDO ' + pago.recibido.toFixed(2) + '\nVUELTO ' + pago.vuelto.toFixed(2) : '')}</pre>`);
     w.document.close(); w.print();
   }
 
