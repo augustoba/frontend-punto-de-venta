@@ -13,6 +13,13 @@ const BUILT: Record<string, () => Promise<any>> = {
   presupuestos: () => import('./pages/presupuestos/presupuestos.component').then((m) => m.PresupuestosComponent),
   facturas: () => import('./pages/facturas/facturas.component').then((m) => m.FacturasComponent),
   reportes: () => import('./pages/reportes/reportes.component').then((m) => m.ReportesComponent),
+  'historial-stock': () => import('./pages/historiales/historiales.component').then((m) => m.HistorialesComponent),
+  'historial-precios': () => import('./pages/historiales/historiales.component').then((m) => m.HistorialesComponent),
+  'ajustes-stock': () => import('./pages/historiales/historiales.component').then((m) => m.HistorialesComponent),
+  categorias: () => import('./pages/categorias/categorias.component').then((m) => m.CategoriasComponent),
+  empleados: () => import('./pages/empleados/empleados.component').then((m) => m.EmpleadosComponent),
+  horas: () => import('./pages/empleados/empleados.component').then((m) => m.EmpleadosComponent),
+  ajustes: () => import('./pages/ajustes/ajustes.component').then((m) => m.AjustesComponent),
   clientes: () => import('./pages/partes/partes.component').then((m) => m.PartesComponent),
   proveedores: () => import('./pages/partes/partes.component').then((m) => m.PartesComponent),
 };
