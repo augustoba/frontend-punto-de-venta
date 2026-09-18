@@ -7,6 +7,8 @@ import { ALL_ITEMS } from './nav';
 const BUILT: Record<string, () => Promise<any>> = {
   ventas: () => import('./pages/ventas/ventas.component').then((m) => m.VentasComponent),
   stock: () => import('./pages/stock/stock.component').then((m) => m.StockComponent),
+  clientes: () => import('./pages/partes/partes.component').then((m) => m.PartesComponent),
+  proveedores: () => import('./pages/partes/partes.component').then((m) => m.PartesComponent),
 };
 
 export const routes: Routes = [
