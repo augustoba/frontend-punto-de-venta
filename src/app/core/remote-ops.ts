@@ -49,7 +49,7 @@ export const REMOTE_OPS: Record<string, Op> = {
     const m = { ...cur, ...p };
     const data = {
       name: m.name, barcode: m.barcode ?? '', categoryId: n(m.categoryId), supplierId: n(m.supplierId), cost: m.cost ?? 0, price: m.price ?? 0,
-      offer: m.offer ?? 0, lowStock: m.lowStock ?? 0, idealStock: m.idealStock ?? 0, iva: m.iva ?? 21,
+      offer: m.offer ?? 0, lowStock: m.lowStock ?? 0, idealStock: m.idealStock ?? 0, iva: m.iva ?? 21, image: m.image ?? null,
       combo: (m.combo ?? []).map((c: any) => ({ productId: Number(c.productId), qty: c.qty })),
     };
     return p.id ? put(api, `/api/products/${p.id}`, data) : api.post('/api/products', { data, initialStock });

@@ -20,6 +20,7 @@ export interface Product {
   idealStock: number;
   iva: number;          // 21, 10.5, 0
   archived: boolean;
+  image: string;        // foto (data URL); '' = sin foto
   combo: ComboItem[];   // si tiene ítems es un combo: su stock se deriva de los componentes
   createdAt: Iso;
 }

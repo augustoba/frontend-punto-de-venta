@@ -239,7 +239,7 @@ export class Store {
         Object.assign(x, p); return x.id;
       }
       const np: Product = {
-        id: this.newId(d, 'p'), barcode: '', categoryId: null, supplierId: null, cost: 0, price: 0, offer: 0, stock: 0,
+        id: this.newId(d, 'p'), image: '', barcode: '', categoryId: null, supplierId: null, cost: 0, price: 0, offer: 0, stock: 0,
         lowStock: 0, idealStock: 0, iva: d.settings.defaultIva, archived: false, combo: [], createdAt: nowIso(), ...p,
       } as Product;
       np.stock = 0; d.products.push(np);

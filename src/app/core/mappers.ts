@@ -27,7 +27,7 @@ export const mapCategory = (c: any): Category => ({
 export const mapProduct = (p: any): Product => ({
   id: s(p.id), name: p.name, barcode: p.barcode ?? '', categoryId: id(p.categoryId), supplierId: id(p.supplierId),
   cost: num(p.cost), price: num(p.price), offer: num(p.offer), stock: num(p.stock), lowStock: num(p.lowStock),
-  idealStock: num(p.idealStock), iva: num(p.iva), archived: !!p.archived,
+  idealStock: num(p.idealStock), iva: num(p.iva), archived: !!p.archived, image: p.image ?? '',
   combo: (p.components ?? (Array.isArray(p.combo) ? p.combo : [])).map((c: any) => ({ productId: s(c.productId), qty: num(c.qty) })), createdAt: p.createdAt,
 });
 

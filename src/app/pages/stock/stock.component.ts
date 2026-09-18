@@ -82,7 +82,7 @@ type StockFilter = '' | 'ideal' | 'critico' | 'sin';
       @for (p of filtrados(); track p.id) {
         <tr>
           <td><input type="checkbox" style="height: auto" [checked]="selected().includes(p.id)" (change)="marcar(p.id, $any($event.target).checked)" /></td>
-          <td class="c"><span class="img-ph" title="Sin imagen disponible"><i class="fa-solid fa-bag-shopping"></i></span></td>
+          <td class="c">@if (p.image) { <img class="img-ph" [src]="p.image" [alt]="p.name" style="object-fit: cover" /> } @else { <span class="img-ph" title="Sin imagen disponible"><i class="fa-solid fa-bag-shopping"></i></span> }</td>
           <td><b>{{ p.name }}</b> @if (p.combo.length) { <span class="badge b-gray">Combo</span> }</td>
           <td>{{ p.barcode }}</td>
           <td>@if (catName(p); as c) { <span class="badge b-blue"><i class="fa-solid fa-circle-dot" style="margin-right: 5px; font-size: 10px"></i>{{ c }}</span> }</td>
@@ -124,6 +124,16 @@ type StockFilter = '' | 'ideal' | 'critico' | 'sin';
       <app-modal [title]="f.combo ? (f.id ? 'Editar combo' : 'Nuevo combo') : (f.id ? 'Editar producto' : 'Nuevo producto')" [width]="640" (closed)="form.set(null)">
         <div class="grid2">
           <div class="field"><label>Nombre</label><input [(ngModel)]="f.name" /></div>
+          @if (store.settings().productImages) {
+            <div class="field foto-field"><label>Foto</label>
+              <div class="row" style="gap: 10px">
+                @if (f.image) { <img class="img-ph" [src]="f.image" alt="Foto" style="width: 56px; height: 56px; object-fit: cover" /> } @else { <span class="img-ph" style="width: 56px; height: 56px"><i class="fa-solid fa-image"></i></span> }
+                <label class="pillbtn blue" style="cursor: pointer">Subir foto<input type="file" accept="image/png,image/jpeg,image/webp" hidden (change)="subirFoto($event, f)" /></label>
+                @if (f.image) { <button class="pillbtn" (click)="f.image = ''">Quitar</button> }
+              </div>
+              @if (fotoError()) { <small style="color: #8a1c1c">{{ fotoError() }}</small> }
+            </div>
+          }
           <div class="field"><label>Código de barra</label><input [(ngModel)]="f.barcode" /></div>
           <div class="field"><label>Categoría</label><select [(ngModel)]="f.categoryId"><option [ngValue]="null">—</option>@for (c of store.categories(); track c.id) {<option [ngValue]="c.id">{{ c.name }}</option>}</select></div>
           <div class="field"><label>Proveedor (opcional)</label><select [(ngModel)]="f.supplierId"><option [ngValue]="null">Sin proveedor</option>@for (s of store.suppliers(); track s.id) {<option [ngValue]="s.id">{{ s.name }}</option>}</select></div>
@@ -217,6 +227,29 @@ export class StockComponent {
     const a = document.createElement('a'); a.href = url; a.download = 'stock.csv'; a.click(); URL.revokeObjectURL(url);
   }
   imprimir() { window.print(); }
+  readonly fotoError = signal('');
+  /** Reduce la foto a 200 px (lado mayor) en JPEG y la deja en el formulario. */
+  subirFoto(ev: Event, f: any) {
+    const input = ev.target as HTMLInputElement, file = input.files?.[0];
+    input.value = '';
+    this.fotoError.set('');
+    if (!file) return;
+    if (!/^image\/(png|jpeg|webp)$/.test(file.type)) { this.fotoError.set('La foto debe ser PNG, JPG o WebP.'); return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const k = Math.min(1, 200 / Math.max(img.width, img.height));
+        const c = document.createElement('canvas');
+        c.width = Math.max(1, Math.round(img.width * k)); c.height = Math.max(1, Math.round(img.height * k));
+        const x = c.getContext('2d')!; x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(img, 0, 0, c.width, c.height);
+        f.image = c.toDataURL('image/jpeg', 0.82);
+      };
+      img.onerror = () => this.fotoError.set('No se pudo leer la imagen.');
+      img.src = String(reader.result);
+    };
+    reader.readAsDataURL(file);
+  }
   readonly selected = signal<string[]>([]);
   readonly menu = signal('');
   readonly editing = signal('');
@@ -269,7 +302,7 @@ export class StockComponent {
   }
   guardar(f: any) {
     const combo = f.combo ? f.comboItems.filter((c: any) => c.productId && c.qty > 0) : [];
-    const base = { name: f.name.trim(), barcode: f.barcode, categoryId: f.categoryId, supplierId: f.supplierId, cost: +f.cost || 0, price: +f.price || 0, offer: +f.offer || 0, lowStock: +f.lowStock || 0, idealStock: +f.idealStock || 0, iva: f.iva, combo };
+    const base = { image: f.image ?? '', name: f.name.trim(), barcode: f.barcode, categoryId: f.categoryId, supplierId: f.supplierId, cost: +f.cost || 0, price: +f.price || 0, offer: +f.offer || 0, lowStock: +f.lowStock || 0, idealStock: +f.idealStock || 0, iva: f.iva, combo };
     this.store.saveProduct(f.id ? { id: f.id, ...base } : base, f.id ? 0 : +f.stock || 0);
     this.form.set(null);
   }
