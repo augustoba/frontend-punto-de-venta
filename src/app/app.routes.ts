@@ -4,44 +4,9 @@ import { productResolver } from './features/admin/admin-product-form/product.res
 import { orderResolver } from './features/admin/admin-order-detail/order.resolver';
 
 export const routes: Routes = [
-  {
-    path: '',
-    loadComponent: () =>
-      import('./features/catalog/catalog-page/catalog-page.component').then(
-        (m) => m.CatalogPageComponent
-      ),
-    title: 'Estilos Pequeños | Ropa para niños',
-  },
-  {
-    path: 'producto/:id',
-    loadComponent: () =>
-      import('./features/product-detail/product-detail-page/product-detail-page.component').then(
-        (m) => m.ProductDetailPageComponent
-      ),
-    title: 'Producto | Estilos Pequeños',
-  },
-  {
-    path: 'carrito',
-    loadComponent: () =>
-      import('./features/cart/cart-page/cart-page.component').then((m) => m.CartPageComponent),
-    title: 'Carrito | Estilos Pequeños',
-  },
-  {
-    path: 'como-comprar',
-    loadComponent: () =>
-      import('./features/help/como-comprar-page/como-comprar-page.component').then(
-        (m) => m.ComoComprarPageComponent
-      ),
-    title: 'Cómo comprar | Estilos Pequeños',
-  },
-  {
-    path: 'mis-pedidos',
-    loadComponent: () =>
-      import('./features/orders/mis-pedidos-page/mis-pedidos-page.component').then(
-        (m) => m.MisPedidosPageComponent
-      ),
-    title: 'Mis pedidos | Estilos Pequeños',
-  },
+  // Punto de venta independiente: NO hay tienda pública. La raíz lleva al panel.
+  // (Las páginas del ecommerce quedan en el repo sin ruta; ver docs/ROADMAP_ENVI.md, parte P0.)
+  { path: '', pathMatch: 'full', redirectTo: 'admin' },
   {
     path: 'admin/login',
     loadComponent: () =>

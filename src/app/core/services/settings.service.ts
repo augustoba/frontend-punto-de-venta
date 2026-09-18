@@ -175,14 +175,11 @@ export const WHATSAPP_CLOSING_DEFAULT =
 
 /** Valores por defecto: se usan para el primer render, antes de que llegue `/api/settings`. */
 const DEFAULTS: SiteSettings = {
-  storeName: 'Estilos Pequeños',
+  storeName: 'Punto de venta',
   whatsappNumber: '5491122334455',
-  aboutText:
-    'Somos Estilos Pequeños 🧸 Hace 5 años vestimos a los más chicos con ropa cómoda, ' +
-    'de calidad y con onda. Elegimos cada prenda pensando en la comodidad de los peques ' +
-    'y la tranquilidad de las familias. ¡Gracias por elegirnos!',
-  instagram: 'estilospequenos_',
-  facebookUrl: 'https://www.facebook.com/share/1NZXdYgick/',
+  aboutText: '',
+  instagram: '',
+  facebookUrl: '',
   logoUrl: null,
   logoShape: 'circle',
   theme: 'default',
