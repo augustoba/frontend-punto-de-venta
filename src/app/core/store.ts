@@ -95,10 +95,10 @@ export class Store {
     this.wrapRemoteOps();
   }
 
-  /** Modo servidor: se activa con `localStorage['pos-use-api']='1'` y sólo si la API responde. */
+  /** Modo servidor: activo por defecto si la API responde; se apaga con `localStorage['pos-use-api']='0'`. */
   async connect(): Promise<void> {
-    let wanted = false;
-    try { wanted = localStorage.getItem('pos-use-api') === '1'; } catch { /* sin storage */ }
+    let wanted = true;
+    try { wanted = localStorage.getItem('pos-use-api') !== '0'; } catch { /* sin storage */ }
     if (!wanted) return;
     try { await this.sync(); this.remote.set(true); } catch { this.remote.set(false); }
   }
