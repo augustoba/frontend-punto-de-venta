@@ -28,6 +28,7 @@ npm start        # http://localhost:4200
 |---|---|---|---|
 | F0 | Proyecto nuevo + shell (menú, topbar) + estilos Envi | `tokens.css` | ✅ |
 | F1 | Ventas (listado con KPIs, buscador, tabla; datos de muestra) | `vistas/01-ventas.html` | ✅ (sin backend) |
+| F1b | Núcleo de datos y lógica (`core/models.ts`, `core/store.ts`, 14 tests) | `ANALISIS_*.md` | ✅ |
 | F2 | Caja registradora + modal de cobro + atajos | `vistas/02`, `03`, `ANALISIS.md` | ⬜ |
 | F3 | Stock (listado, filtros, edición en línea, masivos, combo) | `vistas/05`, `ANALISIS_stock.md` | ⬜ |
 | F4 | Clientes y proveedores (ficha, cuenta corriente, movimientos) | `vistas/08`, `ANALISIS_cuentas_corrientes.md` | ⬜ |
@@ -41,3 +42,4 @@ npm start        # http://localhost:4200
 
 ## Bitácora
 - **F0/F1** (2026-09-18): recreado el front (`ng new` en el lugar, tras vaciar el repo viejo). Shell con el menú de Envi (`nav.ts`), pantalla Ventas con datos de muestra. Verificado en el navegador (`/ventas`). Sin backend todavía.
+- **F1b** (2026-09-18): `core/store.ts` = única fuente de verdad, guarda en `localStorage` (`pos-db-v1`) hasta que exista la API (F11). Implementa las reglas de Envi: libro de movimientos por cuenta (caja/banco), libro de stock (sin tope negativo), cuenta corriente de clientes/proveedores con saldo corrido, ventas (deuda si no está paga, asiento en la cuenta, descuento automático por transferencia opcional, baja de stock incl. combos), apertura/cierre de caja con asientos de diferencia, compras Borrador→Pedido→Recibido, presupuestos, cheques, centros de costos, categorías, empleados/horas. `core/store.spec.ts`: 14 pruebas (`npx ng test --watch=false --browsers=ChromeHeadless`). Decisión: `transferDiscount` arranca en 0 (en Envi el demo tenía 10%); se configura en Ajustes.
