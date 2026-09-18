@@ -1,27 +1,47 @@
-<div class="flex items-center justify-between mb-4">
-  <h1 class="font-display font-extrabold text-2xl text-stone-800">Pedidos</h1>
-  <button type="button" (click)="exportCsv()"
-    class="text-sm font-semibold text-stone-500 hover:text-stone-700 py-2 px-3">⬇️ CSV</button>
+<h1 class="pnl-title">Pedidos</h1>
+<p class="pnl-subtitle">Seguí, confirmá y consultá los pedidos de la tienda y las ventas del local.</p>
+
+<!-- KPIs -->
+<div class="pnl-kpis">
+  <div class="pnl-kpi">
+    <p class="pnl-kpi-label">Pedidos</p>
+    <p class="pnl-kpi-value">{{ totalElements() }}</p>
+    <p class="pnl-muted text-sm">{{ hasFilters() ? 'Con los filtros aplicados' : 'En total' }}</p>
+  </div>
+  <div class="pnl-kpi">
+    <p class="pnl-kpi-label">Pendientes</p>
+    <p class="pnl-kpi-value">{{ pendingOnPage() }}</p>
+    <p class="pnl-muted text-sm">En esta página</p>
+  </div>
+  <div class="pnl-kpi">
+    <p class="pnl-kpi-label">Monto (sin cancelados)</p>
+    <p class="pnl-kpi-value">{{ amountOnPage() | currency: 'ARS' : 'symbol' : '1.0-0' }}</p>
+    <p class="pnl-muted text-sm">En esta página</p>
+  </div>
 </div>
 
-<!-- Filtros -->
-<div class="bg-white rounded-2xl ring-1 ring-black/5 p-4 mb-5 flex flex-col sm:flex-row sm:flex-wrap sm:items-end gap-3">
-  <div class="flex-1 min-w-[180px]">
-    <label class="block text-xs font-semibold text-stone-500 mb-1" for="q">Buscar</label>
-    <input
-      id="q" type="search"
-      [ngModel]="search()" (ngModelChange)="search.set($event)"
-      (keydown.enter)="applyFilters()"
-      placeholder="Código (PED-0007) o nombre del cliente"
-      class="w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
-    />
-  </div>
+<!-- Barra de herramientas + filtros -->
+<div class="pnl-toolbar">
+  <input
+    id="q" type="search" class="pnl-input flex-1 min-w-[200px]"
+    [ngModel]="search()" (ngModelChange)="search.set($event)"
+    (keydown.enter)="applyFilters()"
+    placeholder="🔍 Código (PED-0007) o nombre del cliente"
+    aria-label="Buscar"
+  />
+  <button type="button" (click)="applyFilters()" class="pnl-btn pnl-btn-cta">Buscar</button>
+  @if (hasFilters()) {
+    <button type="button" (click)="clearFilters()" class="pnl-btn">Limpiar ✕</button>
+  }
+  <span class="pnl-grow"></span>
+  <button type="button" (click)="reload()" class="pnl-btn" aria-label="Recargar" title="Recargar">⟳</button>
+  <button type="button" (click)="exportCsv()" class="pnl-btn" title="Exportar CSV">⬇️ CSV</button>
+</div>
+
+<div class="pnl-card mb-4 pnl-grid-2">
   <div>
-    <label class="block text-xs font-semibold text-stone-500 mb-1" for="st">Estado</label>
-    <select
-      id="st" [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)"
-      class="rounded-lg border border-stone-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
-    >
+    <label class="pnl-label" for="st">Estado</label>
+    <select id="st" class="pnl-select w-full" [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)">
       <option value="">Todos</option>
       <option value="PENDIENTE">Pendientes</option>
       <option value="PROCESADO">Confirmados</option>
@@ -29,78 +49,72 @@
     </select>
   </div>
   <div>
-    <label class="block text-xs font-semibold text-stone-500 mb-1" for="fd">Desde</label>
-    <input id="fd" type="date" [ngModel]="from()" (ngModelChange)="from.set($event)"
-      class="rounded-lg border border-stone-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400" />
+    <label class="pnl-label" for="fd">Desde</label>
+    <input id="fd" type="date" class="pnl-input w-full" [ngModel]="from()" (ngModelChange)="from.set($event)" />
   </div>
   <div>
-    <label class="block text-xs font-semibold text-stone-500 mb-1" for="td">Hasta</label>
-    <input id="td" type="date" [ngModel]="to()" (ngModelChange)="to.set($event)"
-      class="rounded-lg border border-stone-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400" />
+    <label class="pnl-label" for="td">Hasta</label>
+    <input id="td" type="date" class="pnl-input w-full" [ngModel]="to()" (ngModelChange)="to.set($event)" />
   </div>
-  <button type="button" (click)="applyFilters()"
-    class="bg-brand-500 hover:bg-brand-600 text-white font-bold py-2 px-5 rounded-full transition-colors text-sm">
-    Buscar
-  </button>
-  @if (hasFilters()) {
-    <button type="button" (click)="clearFilters()"
-      class="text-sm font-semibold text-stone-500 hover:text-stone-700 py-2">
-      Limpiar ✕
-    </button>
-  }
 </div>
 
 @if (status() === 'loading' && !orders().length) {
   <app-skeleton variant="row" [count]="6" />
 } @else if (status() === 'error' && !orders().length) {
-  <div class="text-center py-16 text-stone-400 bg-white rounded-2xl ring-1 ring-black/5">
-    <p class="font-semibold mb-2">No se pudieron cargar los pedidos.</p>
-    <button type="button" (click)="reload()" class="text-brand-600 font-semibold hover:underline">Reintentar</button>
+  <div class="pnl-card text-center py-16">
+    <p class="font-semibold mb-2 pnl-muted">No se pudieron cargar los pedidos.</p>
+    <button type="button" (click)="reload()" class="pnl-btn">Reintentar</button>
   </div>
 } @else if (orders().length) {
-  <div class="bg-white rounded-2xl ring-1 ring-black/5 overflow-x-auto">
-    <table class="w-full text-sm min-w-[640px]">
+  <div class="overflow-x-auto rounded-2xl">
+    <table class="pnl-table min-w-[720px]">
       <thead>
-        <tr class="text-left text-stone-500 border-b border-stone-100">
-          <th class="p-4 font-semibold">Código</th>
-          <th class="p-4 font-semibold">Cliente</th>
-          <th class="p-4 font-semibold">Fecha</th>
-          <th class="p-4 font-semibold">Ítems</th>
-          <th class="p-4 font-semibold">Total</th>
-          <th class="p-4 font-semibold">Estado</th>
-          <th class="p-4 font-semibold text-right">Acciones</th>
+        <tr>
+          <th>Fecha</th>
+          <th>Código</th>
+          <th>Cliente</th>
+          <th>Origen</th>
+          <th>Pago</th>
+          <th>Ítems</th>
+          <th class="pnl-right">Total</th>
+          <th>Estado</th>
+          <th class="pnl-right"></th>
         </tr>
       </thead>
       <tbody>
         @for (order of orders(); track order.id) {
-          <tr class="border-b border-stone-50 last:border-0 hover:bg-stone-50/60">
-            <td class="p-4 font-mono font-semibold text-stone-800">
+          <tr>
+            <td>
+              <span class="font-bold">{{ order.createdAt | date: 'dd/MM/yy' }}</span><br />
+              <span class="pnl-muted text-xs">{{ order.createdAt | date: 'HH:mm' }}</span>
+            </td>
+            <td class="font-mono font-semibold">
               {{ order.code }}
               @if (order.paymentIssueNote) {
                 <span class="ml-1" title="Mercado Pago aprobó el pago pero no se pudo confirmar solo — revisar">⚠️</span>
               }
             </td>
-            <td class="p-4 text-stone-600">{{ order.customerName }}</td>
-            <td class="p-4 text-stone-500">{{ order.createdAt | date: 'dd/MM/yy HH:mm' }}</td>
-            <td class="p-4 text-stone-500">{{ order.lines.length }}</td>
-            <td class="p-4 text-stone-600">{{ order.total | currency: 'ARS' : 'symbol' : '1.0-0' }}</td>
-            <td class="p-4">
-              <span
-                [class.bg-amber-100]="order.status === 'PENDIENTE'"
-                [class.text-amber-700]="order.status === 'PENDIENTE'"
-                [class.bg-mint-100]="order.status === 'PROCESADO'"
-                [class.text-mint-600]="order.status === 'PROCESADO'"
-                [class.bg-stone-100]="order.status === 'CANCELADO'"
-                [class.text-stone-500]="order.status === 'CANCELADO'"
-                class="text-xs font-bold px-2.5 py-1 rounded-full capitalize"
-              >
-                {{ order.status.toLowerCase() }}
+            <td>
+              <span class="pnl-avatar">{{ (order.customerName || '?').charAt(0).toUpperCase() }}</span>{{ order.customerName }}
+            </td>
+            <td>
+              <span class="pnl-badge" [class.pnl-badge-blue]="order.channel === 'LOCAL'" [class.pnl-badge-gray]="order.channel !== 'LOCAL'">
+                {{ order.channel === 'LOCAL' ? 'Local' : 'Web' }}
               </span>
             </td>
-            <td class="p-4 text-right">
-              <a [routerLink]="['/admin/pedidos', order.id]" class="text-brand-600 hover:underline font-semibold">
-                Ver
-              </a>
+            <td class="pnl-muted">{{ paymentLabel(order) }}</td>
+            <td class="pnl-muted">{{ order.lines.length }}</td>
+            <td class="pnl-right font-semibold">{{ order.total | currency: 'ARS' : 'symbol' : '1.0-0' }}</td>
+            <td>
+              <span class="pnl-badge"
+                [class.pnl-badge-amber]="order.status === 'PENDIENTE'"
+                [class.pnl-badge-green]="order.status === 'PROCESADO'"
+                [class.pnl-badge-gray]="order.status === 'CANCELADO'">
+                {{ statusLabel[order.status] }}
+              </span>
+            </td>
+            <td class="pnl-right">
+              <a [routerLink]="['/admin/pedidos', order.id]" class="pnl-btn !h-8 !px-3">Ver detalle</a>
             </td>
           </tr>
         }
@@ -112,15 +126,13 @@
     (pageChange)="goToPage($event)"
   />
 } @else {
-  <div class="text-center py-20 text-stone-400 bg-white rounded-2xl ring-1 ring-black/5">
+  <div class="pnl-card text-center py-20">
     <p class="text-4xl mb-3">🧾</p>
     @if (hasFilters()) {
       <p class="font-semibold">No hay pedidos con esos filtros.</p>
-      <button type="button" (click)="clearFilters()" class="mt-2 text-brand-600 font-semibold hover:underline">
-        Limpiar filtros
-      </button>
+      <button type="button" (click)="clearFilters()" class="pnl-btn mt-3">Limpiar filtros</button>
     } @else {
-      <p class="font-semibold">Todavía no llegó ningún pedido.</p>
+      <p class="font-semibold pnl-muted">Todavía no llegó ningún pedido.</p>
     }
   </div>
 }

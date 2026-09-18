@@ -18,7 +18,7 @@ Leyenda: ⬜ pendiente · 🔄 en curso · ✅ hecha.
 |---|---|---|
 | A1 | Sistema de diseño opt-in `pnl-*` (`src/panel-theme.css`) | ✅ |
 | A2 | Layout del panel con estilo Envi (sidebar claro agrupado, topbar, fondo degradé) | ✅ |
-| A3 | Pantalla piloto: Ventas/Pedidos con KPIs + filtros + tabla + modal detalle | ⬜ |
+| A3 | Pantalla piloto: Pedidos con KPIs + filtros + tabla (detalle queda en su página) | ✅ |
 | A4 | Cobro (modal "Guardar venta") y caja registradora (2 columnas, atajos) | ⬜ |
 | A5 | Resto de listados con el patrón (Stock, Proveedores, Gastos, Turnos) | ⬜ |
 | A6 | Reportes con pestañas (torta, línea vs mes anterior, barras por día) | ⬜ |
@@ -49,3 +49,4 @@ Orden sugerido de la etapa B: B1 → B2 → B3 (dependen del libro) → B4 → B
 ## Bitácora
 - **A1** (2026-09-18): creado `src/panel-theme.css` (tokens `--pnl-*` + clases `pnl-*`) e importado en `src/styles.css`. No cambia nada visible hasta que un componente use las clases. `npm install` hecho para poder compilar.
 - **A2** (2026-09-18): `admin-layout.component.html` reescrito con `pnl pnl-page`, sidebar claro (`pnl-side`, `pnl-nav-item`, `pnl-nav-sub`, `pnl-count`) y topbar (`pnl-topbar`). El `.ts` no cambió (mismos grupos, badges, drawer mobile). Fuente: se mantiene Nunito/Baloo (decisión: no cambiar tipografía todavía). Las pantallas hijas siguen con su estilo actual sobre el fondo degradé; se migran en A3-A6. Verificado: `ng build` OK. Pendiente de verificar a ojo con backend corriendo (no se levantó MySQL en esta sesión).
+- **A3** (2026-09-18): `admin-orders` (`/admin/pedidos`) migrado al patrón: título/subtítulo, 3 KPIs (`pnl-kpi`), toolbar con búsqueda + recargar + CSV, panel de filtros (`pnl-card`), tabla `pnl-table` con columnas nuevas **Origen** (Web/Local, `order.channel`) y **Pago** (`PAYMENT_LABELS`), chips de estado y avatar del cliente. La lógica (filtros, paginación, CSV) no cambió; se agregaron en el `.ts` `pendingOnPage`, `amountOnPage`, `statusLabel`, `paymentLabel()`. Los KPIs "Pendientes" y "Monto" se calculan **sobre la página cargada** (limitación: no hay endpoint de resumen; se podría agregar en B-etapa). El detalle del pedido sigue siendo una página aparte (`admin-order-detail`, no migrada todavía → A5). Verificado: `ng build` OK; sin verificar a ojo.

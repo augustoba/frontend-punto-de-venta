@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { OrderService } from '../../../core/services/order.service';
 import { ExportService } from '../../../core/services/export.service';
-import { OrderStatus } from '../../../core/models/order.model';
+import { Order, OrderStatus, PAYMENT_LABELS } from '../../../core/models/order.model';
 import { SkeletonComponent } from '../../../shared/components/skeleton/skeleton.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 
@@ -40,6 +40,24 @@ export class AdminOrdersComponent {
   readonly statusFilter = signal<OrderStatus | ''>('');
   readonly from = signal('');
   readonly to = signal('');
+
+  // --- KPIs (calculados sobre la página cargada; el total de pedidos viene del backend) ---
+  readonly pendingOnPage = computed(() => this.orders().filter((o) => o.status === 'PENDIENTE').length);
+  readonly amountOnPage = computed(() =>
+    this.orders()
+      .filter((o) => o.status !== 'CANCELADO')
+      .reduce((sum, o) => sum + o.total, 0)
+  );
+
+  readonly statusLabel: Record<OrderStatus, string> = {
+    PENDIENTE: 'Pendiente',
+    PROCESADO: 'Confirmado',
+    CANCELADO: 'Cancelado',
+  };
+
+  paymentLabel(o: Order): string {
+    return o.paymentMethod ? PAYMENT_LABELS[o.paymentMethod] : '—';
+  }
 
   readonly hasFilters = computed(
     () => !!this.search() || !!this.statusFilter() || !!this.from() || !!this.to()
