@@ -7,6 +7,8 @@ import { ALL_ITEMS } from './nav';
 const BUILT: Record<string, () => Promise<any>> = {
   ventas: () => import('./pages/ventas/ventas.component').then((m) => m.VentasComponent),
   stock: () => import('./pages/stock/stock.component').then((m) => m.StockComponent),
+  cuentas: () => import('./pages/cuentas/cuentas.component').then((m) => m.CuentasComponent),
+  'cierres-caja': () => import('./pages/cierres/cierres.component').then((m) => m.CierresComponent),
   clientes: () => import('./pages/partes/partes.component').then((m) => m.PartesComponent),
   proveedores: () => import('./pages/partes/partes.component').then((m) => m.PartesComponent),
 };
