@@ -27,10 +27,10 @@ npm start        # http://localhost:4200
 | # | Pantalla / tema | Referencia | Estado |
 |---|---|---|---|
 | F0 | Proyecto nuevo + shell (menú, topbar) + estilos Envi | `tokens.css` | ✅ |
-| F1 | Ventas (listado con KPIs, buscador, tabla; datos de muestra) | `vistas/01-ventas.html` | ✅ (sin backend) |
+| F1 | Ventas (KPIs del día, filtros, tabla, detalle, anular, exportar CSV) | `vistas/01-ventas.html` | ✅ |
 | F1b | Núcleo de datos y lógica (`core/models.ts`, `core/store.ts`, 14 tests) | `ANALISIS_*.md` | ✅ |
-| F2 | Caja registradora + modal de cobro + atajos | `vistas/02`, `03`, `ANALISIS.md` | ⬜ |
-| F3 | Stock (listado, filtros, edición en línea, masivos, combo) | `vistas/05`, `ANALISIS_stock.md` | ⬜ |
+| F2 | Caja registradora + cobro + descuentos + arqueo (apertura/cierre) + atajos | `vistas/02`, `03`, `ANALISIS_caja.md` | ✅ |
+| F3 | Stock (listado, filtros, edición en línea, masivos, combo, carga masiva) | `vistas/05`, `ANALISIS_stock.md` | ✅ |
 | F4 | Clientes y proveedores (ficha, cuenta corriente, movimientos) | `vistas/08`, `ANALISIS_cuentas_corrientes.md` | ⬜ |
 | F5 | Cuentas y saldos (libro, cheques, centros de costos) | `vistas/07`, `ANALISIS_tesoreria.md` | ⬜ |
 | F6 | Cierres de caja + apertura/cierre | `vistas/12`, `ANALISIS_caja.md` | ⬜ |
@@ -43,3 +43,4 @@ npm start        # http://localhost:4200
 ## Bitácora
 - **F0/F1** (2026-09-18): recreado el front (`ng new` en el lugar, tras vaciar el repo viejo). Shell con el menú de Envi (`nav.ts`), pantalla Ventas con datos de muestra. Verificado en el navegador (`/ventas`). Sin backend todavía.
 - **F1b** (2026-09-18): `core/store.ts` = única fuente de verdad, guarda en `localStorage` (`pos-db-v1`) hasta que exista la API (F11). Implementa las reglas de Envi: libro de movimientos por cuenta (caja/banco), libro de stock (sin tope negativo), cuenta corriente de clientes/proveedores con saldo corrido, ventas (deuda si no está paga, asiento en la cuenta, descuento automático por transferencia opcional, baja de stock incl. combos), apertura/cierre de caja con asientos de diferencia, compras Borrador→Pedido→Recibido, presupuestos, cheques, centros de costos, categorías, empleados/horas. `core/store.spec.ts`: 14 pruebas (`npx ng test --watch=false --browsers=ChromeHeadless`). Decisión: `transferDiscount` arranca en 0 (en Envi el demo tenía 10%); se configura en Ajustes.
+- **F1/F2/F3** (2026-09-18): `pages/ventas`, `pages/caja` (ruta `/caja` fuera del shell, pantalla completa), `pages/stock`, más `shared/modal.component.ts` y `shared/format.ts` (pipes `money`, `fdate`, `ftime`). Caja: buscador con Enter (código exacto agrega directo), carrito, descuento por línea (monto/%/precio final sincronizados), modal de cobro (cliente con «* Nuevo cliente *», medio, «Está pago» → cuenta corriente, descuento global, factura, imprimir ticket), promociones, atajos (Alt+F/S/Q/M/+/-/X), crear producto rápido, arqueo (abrir/cerrar/otras operaciones cuando `settings.arqueo` está activo), «Convertir presupuesto» vía `?presupuesto=ID`. Verificado en el navegador: crear producto → vender → aparece en Ventas. Pendiente en Stock: listas de precios (Principal/Mayorista) y transferencias entre depósitos.
