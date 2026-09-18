@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ModalComponent } from '../../shared/modal.component';
 import { MoneyPipe } from '../../shared/format';
+import { Api } from '../../core/api';
 import { Store, r2 } from '../../core/store';
 import { PayMethod, Product } from '../../core/models';
 
@@ -35,6 +36,10 @@ interface CartLine { productId: string; name: string; qty: number; price: number
               <div class="field" style="margin-top: 10px"><label>Buscar</label>
                 <input #buscador placeholder="🔍 Nombre o código" [ngModel]="q()" (ngModelChange)="q.set($event)" (keydown.enter)="enter()" (keydown.escape)="q.set('')" style="width: 100%" /></div>
             </div>
+            @if (listas().length > 1) {
+              <div class="card" style="margin-top: 12px"><div class="field"><label>Lista de precios</label>
+                <select [ngModel]="listaId()" (ngModelChange)="elegirLista($event)" style="width: 100%">@for (l of listas(); track l.id) { <option [ngValue]="l.id">{{ l.name }}{{ l.main ? '' : ' (' + (l.percent > 0 ? '+' : '') + l.percent + '%)' }}</option> }</select></div></div>
+            }
             <div class="card" style="margin-top: 12px; text-align: center">
               <button class="cta" style="width: 100%" [disabled]="!cart().length" (click)="abrirCobro()">💾 Guardar venta</button>
               <p class="link" style="margin: 12px 0 0" (click)="promos.set(true)">🏷 Promociones</p>
@@ -204,6 +209,7 @@ interface CartLine { productId: string; name: string; qty: number; price: number
 })
 export class CajaComponent implements OnInit {
   readonly store = inject(Store);
+  private readonly api = inject(Api);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   @ViewChild('buscador') buscador?: ElementRef<HTMLInputElement>;
@@ -214,6 +220,9 @@ export class CajaComponent implements OnInit {
   readonly q = signal('');
   readonly soloStock = signal(true);
   readonly cart = signal<CartLine[]>([]);
+  /** Listas de precios del servidor (Principal + las que cree el negocio). Sin API sólo hay precio base. */
+  readonly listas = signal<{ id: number; name: string; percent: number; main: boolean }[]>([]);
+  readonly listaId = signal<number | null>(null);
   readonly menuL = signal(-1);
   readonly cobro = signal<any>(null);
   readonly error = signal('');
@@ -238,6 +247,7 @@ export class CajaComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    this.cargarListas();
     const b = this.route.snapshot.queryParamMap.get('presupuesto');
     const bud = b ? this.store.db().budgets.find((x) => x.id === b) : undefined;
     if (bud) {
@@ -272,12 +282,28 @@ export class CajaComponent implements OnInit {
     if (this.resultados().length === 1) this.agregar(this.resultados()[0]);
   }
   agregar(p: Product) {
-    const precio = p.offer > 0 ? p.offer : p.price;
+    const precio = this.precioDe(p);
     this.cart.update((c) => {
       const i = c.findIndex((l) => l.productId === p.id);
       return i >= 0 ? c.map((l, k) => (k === i ? { ...l, qty: l.qty + 1 } : l)) : [...c, { productId: p.id, name: p.name, qty: 1, price: precio, base: precio, discountUnit: 0 }];
     });
     this.q.set('');
+  }
+  /** Precio según la lista elegida: Principal usa oferta/precio; otra lista aplica su porcentaje al precio base. */
+  private precioDe(p: Product): number {
+    const l = this.listas().find((x) => x.id === this.listaId());
+    return !l || l.main ? (p.offer > 0 ? p.offer : p.price) : r2(p.price * (1 + l.percent / 100));
+  }
+  elegirLista(id: number) {
+    this.listaId.set(id);
+    this.cart.update((c) => c.map((l) => { const p = this.store.product(l.productId); if (!p) return l; const precio = this.precioDe(p); return { ...l, price: precio, base: precio, discountUnit: 0 }; }));
+  }
+  private async cargarListas() {
+    try {
+      const ls = await this.api.get<any[]>('/api/price-lists');
+      this.listas.set(ls.map((l) => ({ id: l.id, name: l.name, percent: Number(l.percent), main: !!l.main })));
+      this.listaId.set(ls.find((l) => l.main)?.id ?? null);
+    } catch { /* sin API: precio base */ }
   }
   cant(i: number, d: number) { this.cart.update((c) => c.map((l, k) => (k === i ? { ...l, qty: Math.max(1, l.qty + d) } : l))); }
   quitar(i: number) { this.cart.update((c) => c.filter((_, k) => k !== i)); this.menuL.set(-1); }
@@ -315,7 +341,7 @@ export class CajaComponent implements OnInit {
     try {
       const s = await this.store.registerSale({
         customerId: c.customerId, lines: this.cart().map((l) => ({ productId: l.productId, qty: l.qty, price: l.price, discountUnit: l.discountUnit })),
-        discountPct: c.discountPct, method: c.method, paid: c.paid, notes: c.notes, invoice: c.invoice, budgetId: this.budgetId,
+        discountPct: c.discountPct, method: c.method, paid: c.paid, notes: c.notes, invoice: c.invoice, budgetId: this.budgetId, priceListId: this.listaId(),
       });
       if (c.print) this.imprimir(s.number);
       this.cobro.set(null); this.cart.set([]); this.budgetId = null;

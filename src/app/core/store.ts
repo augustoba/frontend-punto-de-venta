@@ -75,6 +75,7 @@ export interface SaleInput {
   notes: string;
   invoice: boolean;
   budgetId?: string | null;
+  priceListId?: number | null;   // lista de precios usada (sólo se registra con la API)
   autoDiscount?: boolean;   // si false, no aplica el descuento automático por medio de pago
 }
 

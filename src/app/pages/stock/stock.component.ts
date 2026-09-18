@@ -1,6 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { ListasPreciosComponent } from './listas-precios.component';
 import { ModalComponent } from '../../shared/modal.component';
 import { MoneyPipe } from '../../shared/format';
 import { Store, r2 } from '../../core/store';
@@ -11,7 +12,7 @@ type StockFilter = '' | 'ideal' | 'critico' | 'sin';
 /** Stock / Productos (réplica de Envi /products). Ver referencia-envi/ANALISIS_stock.md */
 @Component({
   selector: 'app-stock',
-  imports: [FormsModule, ModalComponent, MoneyPipe, RouterLink],
+  imports: [FormsModule, ModalComponent, MoneyPipe, RouterLink, ListasPreciosComponent],
   template: `
     <h1>Stock</h1>
     <p class="sub">Cargá productos, gestioná stock y actualizá precios.</p>
@@ -31,6 +32,7 @@ type StockFilter = '' | 'ideal' | 'critico' | 'sin';
       <button (click)="showFilters.set(!showFilters())">Filtrar</button>
       <span class="sp"></span>
       <div class="menu">
+        @if (store.remote()) { <button (click)="listasOpen.set(true)">🏷 Listas de precios</button> }
         <button class="cta" (click)="openNew()">+ Nuevo producto</button>
         <button class="cta" style="margin-left: 2px" (click)="menu.set(menu() === 'new' ? '' : 'new')">▾</button>
         @if (menu() === 'new') {
@@ -111,6 +113,7 @@ type StockFilter = '' | 'ideal' | 'critico' | 'sin';
     <div class="pager"><span>Mostrando {{ filtrados().length }} de {{ store.db().products.length }}</span></div>
 
     @if (form(); as f) {
+    @if (listasOpen()) { <app-listas-precios (closed)="listasOpen.set(false)" /> }
       <app-modal [title]="f.combo ? (f.id ? 'Editar combo' : 'Nuevo combo') : (f.id ? 'Editar producto' : 'Nuevo producto')" [width]="640" (closed)="form.set(null)">
         <div class="grid2">
           <div class="field"><label>Nombre</label><input [(ngModel)]="f.name" /></div>
@@ -185,6 +188,7 @@ export class StockComponent {
   readonly fCat = signal('');
   readonly fArchived = signal<'no' | 'si'>('no');
   readonly showFilters = signal(false);
+  readonly listasOpen = signal(false);
   readonly selected = signal<string[]>([]);
   readonly menu = signal('');
   readonly editing = signal('');

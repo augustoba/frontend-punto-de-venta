@@ -72,7 +72,7 @@ export const REMOTE_OPS: Record<string, Op> = {
   registerSale: (api, _db, i) => api.post('/api/sales', {
     customerId: n(i.customerId), lines: i.lines.map((l: any) => ({ productId: Number(l.productId), qty: l.qty, price: l.price ?? null, discountUnit: l.discountUnit ?? null })),
     discountPct: i.discountPct, method: METHOD_TO_API[i.method as keyof typeof METHOD_TO_API], paid: i.paid, notes: i.notes, invoice: i.invoice,
-    budgetId: n(i.budgetId), autoDiscount: i.autoDiscount ?? null,
+    budgetId: n(i.budgetId), autoDiscount: i.autoDiscount ?? null, priceListId: i.priceListId ?? null,
   }),
   deleteSale: (api, _db, id: string) => api.del(`/api/sales/${id}`),
   createInvoice: (api, _db, customerId: string | null, items: string, total: number, ivaRate = 21) => api.post('/api/invoices', { customerId: n(customerId), items, total, ivaRate }),
