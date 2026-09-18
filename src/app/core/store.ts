@@ -39,7 +39,7 @@ const DEFAULT_CATEGORIES: Category[] = [
 
 export const DEFAULT_SETTINGS: Settings = {
   businessName: 'Mi negocio', arqueo: false, alertDiff: 2000, createProductFromCash: true, hideStockFilter: false,
-  cumulativeDiscounts: false, sellerCommission: 10, transferDiscount: 0, defaultIva: 21, markup: 40, hideOutOfStock: false,
+  cumulativeDiscounts: false, sellerCommission: 10, transferDiscount: 0, defaultIva: 21, markup: 40, hideOutOfStock: false, logo: '',
 };
 
 function emptyDb(): Db {

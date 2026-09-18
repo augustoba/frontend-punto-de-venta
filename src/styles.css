@@ -22,26 +22,49 @@
 *{box-sizing:border-box}
 body{margin:0;font-family:var(--font);background:var(--background);color:var(--text);font-size:14px}
 h1{font-size:28px;font-weight:800;margin:0}
-.app{display:grid;grid-template-columns:230px 1fr;min-height:100vh}
-.sidebar{padding:16px 12px;border-right:1px solid var(--divider-color);background:var(--surface)}
-.sidebar .logo{font-weight:800;color:var(--primary);margin:0 8px 16px}
-.sidebar h6{margin:16px 8px 4px;font-size:11px;letter-spacing:.06em;color:var(--text-label);text-transform:uppercase}
-.sidebar a{display:block;padding:8px 10px;border-radius:var(--radius-surface);color:var(--text-soft);text-decoration:none;font-weight:600;font-size:13px}
-.sidebar a.on,.sidebar a:hover{background:var(--surface-strong);color:var(--text)}
-.main{padding:0 24px 40px}
-.topbar{display:flex;justify-content:space-between;align-items:center;height:64px;border-bottom:1px solid var(--divider-color);margin:0 -24px 20px;padding:0 24px}
-.topbar b{font-size:20px}
+.animated-bg{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.animated-bg i{position:absolute;left:-20%;width:140%}
+.animated-bg i:nth-child(1){top:-6%;height:500px;background:radial-gradient(45% 120%,rgba(248,212,176,.46),transparent 72%);animation:wave 19s ease-in-out infinite alternate}
+.animated-bg i:nth-child(2){top:8%;height:540px;background:radial-gradient(45% 120%,rgba(234,176,120,.36),transparent 72%);animation:wave 25s ease-in-out infinite alternate-reverse}
+.animated-bg i:nth-child(3){top:22%;height:620px;background:radial-gradient(45% 120%,rgba(206,138,78,.27),transparent 72%);animation:wave 31s ease-in-out infinite alternate}
+@keyframes wave{from{transform:translateX(-5%)}to{transform:translateX(5%)}}
+@media (prefers-reduced-motion:reduce){.animated-bg i{animation:none}}
+.app{position:relative;z-index:1;display:grid;grid-template-columns:256px 1fr;min-height:100vh}
+.sidebar{position:sticky;top:0;height:100vh;overflow-y:auto;padding:14px 12px 24px;border-right:1px solid var(--divider-color);background:rgba(255,255,255,.55);backdrop-filter:blur(14px)}
+.brand{display:flex;align-items:center;gap:10px;margin:2px 8px 12px;font-weight:800;font-size:16px;white-space:nowrap;color:var(--text)}
+.brand .mark{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;color:#fff;font-size:16px;background:linear-gradient(135deg,#3a3a66,var(--cta));box-shadow:0 4px 12px rgba(33,33,59,.25)}
+.sidebar h6{margin:18px 10px 6px;font-size:11px;letter-spacing:.07em;color:var(--text-label);text-transform:uppercase}
+.sidebar a{display:flex;align-items:center;gap:11px;padding:8px 10px;border-radius:var(--radius-surface);color:var(--text-soft);text-decoration:none;font-weight:600;font-size:13px}
+.sidebar a i{width:18px;text-align:center;font-size:14px;color:var(--text-label)}
+.sidebar a:hover{background:rgba(255,255,255,.7);color:var(--text)}
+.sidebar a.on{background:var(--surface-strong);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.sidebar a.on i{color:var(--accent-blue)}
+.main{padding:0 24px 40px;min-width:0}
+.topbar{display:flex;justify-content:space-between;align-items:center;height:72px;margin:0 -24px 18px;padding:0 24px}
+.topbar .biz{display:flex;align-items:center;gap:12px}
+.topbar b{font-size:22px}
+.biz-logo{width:48px;height:48px;border-radius:12px;object-fit:contain;background:rgba(255,255,255,.75);border:1px solid var(--divider-color)}
+.biz-logo.empty{display:flex;align-items:center;justify-content:center;text-decoration:none;text-align:center;font-size:9px;font-weight:800;line-height:1.1;color:var(--text-label);border-style:dashed}
+.topbar .who{display:flex;align-items:center;gap:12px;font-weight:600}
+.topbar .who .avatar{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;border:1.5px solid var(--accent-blue);color:var(--accent-blue);background:rgba(255,255,255,.6)}
 .sub{color:var(--text-soft);margin:4px 0 16px}
 .kpis{display:grid;grid-template-columns:1fr 1fr 2fr;gap:12px;margin-bottom:16px}
 .kpis.k4{grid-template-columns:repeat(4,1fr)}
 .kpi,.card{background:var(--surface);backdrop-filter:blur(var(--surface-blur));border:1px solid var(--divider-color);border-radius:var(--radius-card);padding:14px 16px}
 .kpi small{display:block;font-size:11px;letter-spacing:.05em;color:var(--text-label);text-transform:uppercase;font-weight:700}
 .kpi strong{font-size:22px}
+/* Tarjetas de indicadores con ícono a la izquierda, como en Envi (el ícono depende de la posición) */
+.kpi{display:grid;grid-template-columns:auto 1fr;column-gap:14px;align-items:center}
+.kpi>*{grid-column:2}
+.kpi::before{grid-column:1;grid-row:1 / span 3;width:42px;height:42px;border-radius:12px;display:grid;place-items:center;font:900 16px/1 "Font Awesome 7 Free";content:"\f02b";color:var(--accent-blue);background:var(--accent-blue-bg)}
+.kpis>.kpi:nth-child(2)::before{content:"\24";color:#1f9d63;background:rgba(31,157,99,.13)}
+.kpis>.kpi:nth-child(3)::before{content:"\f201";color:#d9822b;background:rgba(217,130,43,.14)}
+.kpis>.kpi:nth-child(4)::before{content:"\f468";color:#7c5cd6;background:rgba(124,92,214,.14)}
 .toolbar{display:flex;gap:8px;align-items:center;margin-bottom:12px}
 .toolbar .sp{flex:1}
 input,select,textarea{height:var(--control-height);border:1px solid var(--control-border-color);border-radius:var(--radius-input);padding:0 12px;font:inherit;background:var(--surface-solid);min-width:0}
 button,.btn{height:var(--control-height);border:1px solid var(--control-border-color);background:var(--surface-solid);border-radius:var(--radius-button);padding:0 14px;font:inherit;font-weight:700;cursor:pointer}
-.btn.cta,button.cta{background:var(--cta);color:var(--cta-text);border-color:var(--cta)}
+.btn.cta,button.cta,label.cta{background:var(--cta);color:var(--cta-text);border-color:var(--cta)}
 table{width:100%;border-collapse:collapse;background:var(--surface);border-radius:var(--radius-card);overflow:hidden}
 th{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--text-label);text-align:left;padding:12px 14px}
 td{padding:12px 14px;border-top:1px solid var(--divider-row)}

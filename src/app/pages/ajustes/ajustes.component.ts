@@ -50,6 +50,17 @@ const TABS: { id: string; label: string; grupos: { titulo: string; sub: string; 
       </div>
     }
     @if (tab() === 'negocio') {
+      <h3 style="margin-bottom: 0">Logo</h3><p class="sub" style="margin-top: 2px">Aparece en el encabezado junto al nombre del negocio. PNG, JPG o WebP; se reduce solo a 256 px.</p>
+      <div class="card row" style="gap: 16px; margin-bottom: 16px">
+        @if (val('logo')) { <img class="biz-logo" [src]="val('logo')" alt="Logo" style="width: 72px; height: 72px" /> }
+        @else { <div class="biz-logo empty" style="width: 72px; height: 72px">TU<br />LOGO</div> }
+        <div class="grow">
+          <b>Logo del negocio</b><br /><small class="muted">Elegí una imagen cuadrada o con fondo transparente para que se vea mejor.</small>
+          @if (logoError()) { <div style="color: #8a1c1c; margin-top: 6px">{{ logoError() }}</div> }
+        </div>
+        <label class="cta" style="cursor: pointer; padding: 9px 16px; border-radius: 10px">Subir logo<input type="file" accept="image/png,image/jpeg,image/webp" hidden (change)="subirLogo($event)" /></label>
+        @if (val('logo')) { <button (click)="set('logo', '')">Quitar</button> }
+      </div>
       <h3>Datos</h3>
       <div class="card row" style="gap: 12px"><div class="grow"><b>Restablecer datos</b><br /><small class="muted">Borra todo lo cargado en este navegador (productos, ventas, cuentas) y vuelve al estado inicial.</small></div><button class="neg" (click)="reset()">Restablecer</button></div>
     }
@@ -62,5 +73,28 @@ export class AjustesComponent {
   actual() { return TABS.find((t) => t.id === this.tab())!; }
   val(k: keyof Settings): any { return this.store.settings()[k]; }
   set(k: keyof Settings, v: any) { this.store.updateSettings({ [k]: v } as Partial<Settings>); }
+  readonly logoError = signal('');
+  /** Lee la imagen, la reduce a 256 px (lado mayor) y la guarda como data URL en los ajustes. */
+  subirLogo(ev: Event) {
+    const input = ev.target as HTMLInputElement, file = input.files?.[0];
+    input.value = '';
+    this.logoError.set('');
+    if (!file) return;
+    if (!/^image\/(png|jpeg|webp)$/.test(file.type)) { this.logoError.set('El archivo debe ser una imagen PNG, JPG o WebP.'); return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const k = Math.min(1, 256 / Math.max(img.width, img.height));
+        const c = document.createElement('canvas');
+        c.width = Math.max(1, Math.round(img.width * k)); c.height = Math.max(1, Math.round(img.height * k));
+        c.getContext('2d')!.drawImage(img, 0, 0, c.width, c.height);
+        this.set('logo', c.toDataURL('image/png'));
+      };
+      img.onerror = () => this.logoError.set('No se pudo leer la imagen.');
+      img.src = String(reader.result);
+    };
+    reader.readAsDataURL(file);
+  }
   reset() { if (confirm('¿Borrar todos los datos de este navegador? No se puede deshacer.')) this.store.reset(); }
 }

@@ -104,5 +104,5 @@ export const mapShift = (x: any): Shift => ({ id: s(x.id), employeeId: s(x.emplo
 export const mapSettings = (x: any): Settings => ({
   businessName: x.businessName ?? '', arqueo: !!x.arqueo, alertDiff: num(x.alertDiff), createProductFromCash: !!x.createProductFromCash,
   hideStockFilter: !!x.hideStockFilter, cumulativeDiscounts: !!x.cumulativeDiscounts, sellerCommission: num(x.sellerCommission),
-  transferDiscount: num(x.transferDiscount), defaultIva: num(x.defaultIva), markup: num(x.markup), hideOutOfStock: !!x.hideOutOfStock,
+  transferDiscount: num(x.transferDiscount), defaultIva: num(x.defaultIva), markup: num(x.markup), hideOutOfStock: !!x.hideOutOfStock, logo: x.logo ?? '',
 });

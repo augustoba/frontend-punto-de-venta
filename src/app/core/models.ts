@@ -117,6 +117,7 @@ export interface Settings {
   defaultIva: number;
   markup: number;
   hideOutOfStock: boolean;
+  logo: string;                  // data URL de la imagen del negocio ('' = sin logo)
 }
 
 export interface Db {
