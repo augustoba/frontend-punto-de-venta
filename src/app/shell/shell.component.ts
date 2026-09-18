@@ -23,7 +23,7 @@ function leerColapsado(): boolean { try { return localStorage.getItem(KEY_COLAPS
     <div class="app" [class.collapsed]="colapsado()">
       <aside class="sidebar">
         <button class="collapse-btn" (click)="alternarSidebar()" [title]="colapsado() ? 'Expandir menú' : 'Contraer menú'"><i class="fa-solid" [class.fa-chevron-left]="!colapsado()" [class.fa-chevron-right]="colapsado()"></i></button>
-        <div class="brand"><span class="mark"><i class="fa-solid fa-cash-register"></i></span><span class="t">Punto de venta</span></div>
+        <div class="brand"><span class="mark"><svg viewBox="0 0 36 36" width="36" height="36" aria-hidden="true"><path d="M11 13h14l-1.5 12h-11z" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><path d="M15 13a3 3 0 0 1 6 0" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/><circle cx="26" cy="9" r="3.2" fill="#eeb37a"/></svg></span><span class="t">Punto de venta</span></div>
         @for (s of secciones; track s.title) {
           <h6>{{ s.title }}</h6>
           @for (e of s.entries; track $index) {

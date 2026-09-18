@@ -97,29 +97,59 @@ const ymd = (iso: string) => iso.slice(0, 10);
       }
 
       @case ('tesoreria') {
-        <div class="toolbar"><div class="field"><label>Desde</label><input type="date" [ngModel]="desde()" (ngModelChange)="desde.set($event)" /></div><div class="field"><label>Hasta</label><input type="date" [ngModel]="hasta()" (ngModelChange)="hasta.set($event)" /></div></div>
-        <div class="grid2">
-          <div class="card"><b>INGRESOS</b> Total: <b class="pos">{{ totalTes(1) | money }}</b><table style="background: none">@for (c of tes(1); track c.cat) { <tr><td>{{ c.cat }}</td><td class="right">{{ c.total | money }}</td></tr> } @empty { <tr><td class="empty">Sin ingresos en el período</td></tr> }</table></div>
-          <div class="card"><b>GASTOS</b> Total: <b class="neg">{{ totalTes(-1) | money }}</b><table style="background: none">@for (c of tes(-1); track c.cat) { <tr><td>{{ c.cat }}</td><td class="right">{{ c.total | money }}</td></tr> } @empty { <tr><td class="empty">Sin gastos en el período</td></tr> }</table></div>
+        <div class="card rep-card">
+          <div class="row between" style="align-items: flex-start"><b style="font-size: 15px">Ingresos y egresos por categoría</b>
+            <span class="range"><label>Desde<input type="date" [ngModel]="desde()" (ngModelChange)="desde.set($event)" /></label><label>Hasta<input type="date" [ngModel]="hasta()" (ngModelChange)="hasta.set($event)" /></label></span></div>
+          <div class="donuts">
+            @for (bloque of bloquesTes(); track bloque.titulo) {
+              <div class="donut-col">
+                <h4>{{ bloque.titulo }}</h4>
+                <div class="muted" style="margin-bottom: 14px"><b>Total:</b> {{ bloque.total | money }}</div>
+                @if (bloque.items.length) { <div class="donut" [style.background]="donut(bloque.items)"></div> } @else { <div class="donut vacio"></div> }
+                <div class="leyenda">@for (c of bloque.items; track c.cat; let i = $index) { <div><i class="cuad" [style.background]="color(i)"></i><span>{{ c.cat }}</span><b>{{ c.total | money }}</b></div> }
+                  @empty { <p class="muted">Sin movimientos en el período</p> }</div>
+              </div>
+            }
+          </div>
         </div>
       }
 
       @case ('stock') {
-        <div class="kpis k3">
-          <div class="kpi"><small>Cantidad total</small><strong>{{ stockTotal().cant }}</strong></div>
-          <div class="kpi"><small>Valor a precio de venta</small><strong>{{ stockTotal().venta | money }}</strong></div>
-          <div class="kpi"><small>Valor a precio de costo</small><strong>{{ stockTotal().costo | money }}</strong></div>
+        <div class="card rep-card">
+          <div class="row between"><b style="font-size: 15px">Stock consolidado</b>
+            <span class="seg">@for (m of modosStock; track m.id) { <button [class.on]="modoStock() === m.id" (click)="modoStock.set(m.id)">{{ m.label }}</button> }</span></div>
+          <div class="kpi3">
+            <div><small>Total</small><strong>{{ valStock() }}</strong><span class="muted"><i class="fa-solid fa-warehouse"></i>en {{ depositosN() }} {{ depositosN() === 1 ? 'depósito' : 'depósitos' }}</span></div>
+            <div><small>En depósitos</small><strong>{{ valStock() }}</strong><span class="muted"><i class="fa-solid fa-warehouse"></i>100 % del total</span></div>
+            <div><small>En tránsito</small><strong>{{ modoStock() === 'cant' ? 0 : (0 | money) }}</strong><span class="muted"><i class="fa-solid fa-truck"></i>0 % del total</span></div>
+          </div>
         </div>
-        <div class="card"><b>Evolución de movimientos</b> <small class="muted">En los últimos 30 días</small>
-          <div style="display: flex; align-items: flex-end; gap: 3px; height: 140px; margin-top: 8px">@for (d of movs30(); track d.k) { <div style="flex: 1; background: var(--accent-blue); border-radius: 3px 3px 0 0" [style.height.%]="d.h" [title]="d.k + ': ' + d.n + ' movimientos'"></div> }</div></div>
+        <div class="card rep-card" style="margin-top: 16px">
+          <div class="row between"><b style="font-size: 15px">Evolución de movimientos</b><i class="muted">En los últimos 30 días</i></div>
+          <div class="evo">
+            <div class="ejes">@for (v of ejeY(); track v) { <span>{{ v }}</span> }</div>
+            <div class="barras">@for (d of movs30(); track d.k) { <div class="dia" [title]="d.k + ': +' + d.ent + ' / -' + d.sal"><i class="ent" [style.height.%]="d.hEnt"></i><i class="sal" [style.height.%]="d.hSal"></i><small>{{ d.k.slice(8, 10) }}/{{ d.k.slice(5, 7) }}</small></div> }</div>
+          </div>
+          <div class="leyenda-linea"><span><i class="ring ok"></i>Entradas</span><span><i class="ring mal"></i>Salidas</span></div>
+        </div>
       }
 
       @case ('productos') {
-        <div class="toolbar"><div class="field"><label>Desde</label><input type="date" [ngModel]="desde()" (ngModelChange)="desde.set($event)" /></div><div class="field"><label>Hasta</label><input type="date" [ngModel]="hasta()" (ngModelChange)="hasta.set($event)" /></div></div>
-        <div class="kpis k4"><div class="kpi"><small>Productos vendidos</small><strong>{{ ranking().length }}</strong></div><div class="kpi"><small>Facturación</small><strong>{{ rankTot().fact | money }}</strong></div><div class="kpi"><small>Ganancia</small><strong>{{ rankTot().gan | money }}</strong></div><div class="kpi"><small>Margen</small><strong>{{ rankTot().margen }}%</strong></div></div>
-        <table><tr><th>Top</th><th>Producto</th><th>Cantidad</th><th>Facturación</th><th>Costo</th><th>Ganancia</th><th>Margen</th></tr>
-          @for (r of ranking(); track r.name; let i = $index) { <tr><td>#{{ i + 1 }}</td><td>{{ r.name }}</td><td>{{ r.qty }}</td><td>{{ r.fact | money }}</td><td>{{ r.costo | money }}</td><td>{{ r.gan | money }}</td><td>{{ r.margen }}%</td></tr> }
-          @empty { <tr><td colspan="7" class="empty">Sin ventas en el período</td></tr> }</table>
+        <div class="card rep-card">
+          <div class="row between" style="align-items: flex-start"><div><b style="font-size: 20px; font-weight: 500">Ranking de productos</b><br /><small class="muted">(Del {{ fmtRango(desde()) }} al {{ fmtRango(hasta()) }})</small></div>
+            <select class="periodo" [ngModel]="periodoProd()" (ngModelChange)="cambiarPeriodo($event)"><option value="mes">Mes de {{ mesActual() }}</option><option value="anio">Año {{ anioActual() }}</option><option value="custom">Personalizado</option></select></div>
+          @if (periodoProd() === 'custom') { <div class="range" style="margin-top: 8px"><label>Desde<input type="date" [ngModel]="desde()" (ngModelChange)="desde.set($event)" /></label><label>Hasta<input type="date" [ngModel]="hasta()" (ngModelChange)="hasta.set($event)" /></label></div> }
+          <div class="kpi4">
+            <div><small>Productos vendidos</small><strong>{{ ranking().length }}</strong></div>
+            <div><small>Facturación de productos</small><strong>{{ rankTot().fact | money }}</strong></div>
+            <div><small>Ganancia</small><strong>{{ rankTot().gan | money }}</strong><span class="muted">sobre los productos con costo cargado</span></div>
+            <div><small>Margen</small><strong>{{ rankTot().margen }}%</strong><span class="muted">sobre los productos con costo cargado</span></div>
+          </div>
+          <div class="row" style="justify-content: flex-end; margin: 14px 0 4px"><label class="orden">Ordenar por<select [ngModel]="orden()" (ngModelChange)="orden.set($event)"><option value="qty">Cantidad</option><option value="fact">Facturación</option><option value="gan">Ganancia</option><option value="margen">Margen</option></select></label></div>
+          <table class="plano"><tr><th>Top</th><th>Producto</th><th class="right">Cantidad</th><th class="right">Facturación</th><th class="right">Costo</th><th class="right">Ganancia</th><th class="right">Margen</th></tr>
+            @for (r of rankingOrdenado(); track r.name; let i = $index) { <tr><td><span class="top">#{{ i + 1 }}</span></td><td>{{ r.name }}</td><td class="right">{{ r.qty }}</td><td class="right">{{ r.fact | money }}</td><td class="right">{{ r.costo | money }}</td><td class="right">{{ r.gan | money }}</td><td class="right">{{ r.margen }}%</td></tr> }
+            @empty { <tr><td colspan="7" class="empty">Sin ventas en el período</td></tr> }</table>
+        </div>
       }
 
       @case ('clientes') {
@@ -228,12 +258,43 @@ export class ReportesComponent {
     return { cant: ps.reduce((t, p) => t + p.stock, 0), venta: r2(ps.reduce((t, p) => t + p.stock * p.price, 0)), costo: r2(ps.reduce((t, p) => t + p.stock * p.cost, 0)) };
   }
   readonly movs30 = computed(() => {
-    const dias = new Map<string, number>(); const hoy = new Date();
-    for (let i = 29; i >= 0; i--) { const d = new Date(hoy); d.setDate(hoy.getDate() - i); dias.set(d.toISOString().slice(0, 10), 0); }
-    this.store.db().stockMoves.forEach((m) => { const k = ymd(m.at); if (dias.has(k)) dias.set(k, dias.get(k)! + 1); });
-    const max = Math.max(1, ...dias.values());
-    return [...dias].map(([k, n]) => ({ k, n, h: Math.max(2, (n / max) * 100) }));
+    const dias = new Map<string, { ent: number; sal: number }>(); const hoy = new Date();
+    for (let i = 29; i >= 0; i--) { const d = new Date(hoy); d.setDate(hoy.getDate() - i); dias.set(d.toISOString().slice(0, 10), { ent: 0, sal: 0 }); }
+    this.store.db().stockMoves.forEach((m) => { const x = dias.get(ymd(m.at)); if (x) { if (m.delta > 0) x.ent += m.delta; else x.sal += -m.delta; } });
+    const max = Math.max(1, ...[...dias.values()].flatMap((x) => [x.ent, x.sal]));
+    this.maxMov = max;
+    return [...dias].map(([k, x]) => ({ k, ent: x.ent, sal: x.sal, hEnt: x.ent ? Math.max(3, (x.ent / max) * 100) : 0, hSal: x.sal ? Math.max(3, (x.sal / max) * 100) : 0 }));
   });
+  maxMov = 1;
+  ejeY(): number[] { const m = Math.max(1, this.maxMov), paso = Math.max(1, Math.ceil(m / 6)); const out: number[] = []; for (let v = paso * 6; v >= 0; v -= paso) out.push(v); return out; }
+
+  // --- Tesorería: donas por categoría ---
+  private readonly PALETA = ['#ffb347', '#b0bec5', '#4fc3f7', '#aed581', '#ffc107', '#90a4ae', '#ce93d8', '#ef9a9a', '#80cbc4', '#e6ee9c', '#bcaaa4', '#e0e0e0'];
+  color(i: number) { return this.PALETA[i % this.PALETA.length]; }
+  bloquesTes() { return [{ titulo: 'INGRESOS', items: this.tes(1), total: this.totalTes(1) }, { titulo: 'GASTOS', items: this.tes(-1), total: this.totalTes(-1) }]; }
+  donut(items: { cat: string; total: number }[]): string {
+    const t = items.reduce((s, c) => s + c.total, 0) || 1; let a = 0;
+    return `radial-gradient(circle, #fff 0 56%, transparent 57%), conic-gradient(${items.map((c, i) => { const d = (c.total / t) * 100; const s = `${this.color(i)} ${a}% ${a + d}%`; a += d; return s; }).join(',')})`;
+  }
+  // --- Stock consolidado ---
+  readonly modosStock: { id: 'cant' | 'venta' | 'costo'; label: string }[] = [{ id: 'cant', label: 'Cantidad' }, { id: 'venta', label: 'Precio de venta' }, { id: 'costo', label: 'Precio de costo' }];
+  readonly modoStock = signal<'cant' | 'venta' | 'costo'>('cant');
+  valStock(): string { const s = this.stockTotal(); const v = s[this.modoStock()]; return this.modoStock() === 'cant' ? String(v) : '$ ' + v.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  depositosN() { return 1; }
+  // --- Productos ---
+  readonly periodoProd = signal<'mes' | 'anio' | 'custom'>('mes');
+  readonly orden = signal<'qty' | 'fact' | 'gan' | 'margen'>('qty');
+  mesActual() { return MESES[new Date().getMonth()]; }
+  anioActual() { return new Date().getFullYear(); }
+  fmtRango(iso: string) { return `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(2, 4)}`; }
+  cambiarPeriodo(v: 'mes' | 'anio' | 'custom') {
+    this.periodoProd.set(v);
+    const h = new Date();
+    if (v === 'mes') this.desde.set(`${h.getFullYear()}-${String(h.getMonth() + 1).padStart(2, '0')}-01`);
+    if (v === 'anio') this.desde.set(`${h.getFullYear()}-01-01`);
+    if (v !== 'custom') this.hasta.set(h.toISOString().slice(0, 10));
+  }
+  rankingOrdenado() { const k = this.orden(); return [...this.ranking()].sort((a, b) => b[k] - a[k]); }
 
   readonly ranking = computed(() => {
     const m = new Map<string, { name: string; qty: number; fact: number; costo: number }>();

@@ -2,6 +2,8 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Api } from '../../core/api';
+import { CamaraScannerComponent } from '../../shared/camara-scanner.component';
+import { beep } from '../../core/scanner';
 import { ListasPreciosComponent } from './listas-precios.component';
 import { ModalComponent } from '../../shared/modal.component';
 import { MoneyPipe } from '../../shared/format';
@@ -13,7 +15,7 @@ type StockFilter = '' | 'ideal' | 'critico' | 'sin';
 /** Stock / Productos (réplica de Envi /products). Ver referencia-envi/ANALISIS_stock.md */
 @Component({
   selector: 'app-stock',
-  imports: [FormsModule, ModalComponent, MoneyPipe, RouterLink, ListasPreciosComponent],
+  imports: [FormsModule, ModalComponent, MoneyPipe, RouterLink, ListasPreciosComponent, CamaraScannerComponent],
   template: `
     <h1>Stock</h1>
     <p class="sub">Cargá productos, gestioná stock y actualizá precios.</p>
@@ -119,8 +121,9 @@ type StockFilter = '' | 'ideal' | 'critico' | 'sin';
     </table>
     <div class="pager"><span>Mostrando {{ filtrados().length }} de {{ store.db().products.length }}</span></div>
 
-    @if (form(); as f) {
     @if (listasOpen()) { <app-listas-precios (closed)="listasOpen.set(false)" /> }
+
+    @if (form(); as f) {
       <app-modal [title]="f.combo ? (f.id ? 'Editar combo' : 'Nuevo combo') : (f.id ? 'Editar producto' : 'Nuevo producto')" [width]="640" (closed)="form.set(null)">
         <div class="grid2">
           <div class="field"><label>Nombre</label><input [(ngModel)]="f.name" /></div>
@@ -134,7 +137,14 @@ type StockFilter = '' | 'ideal' | 'critico' | 'sin';
               @if (fotoError()) { <small style="color: #8a1c1c">{{ fotoError() }}</small> }
             </div>
           }
-          <div class="field"><label>Código de barra</label><input [(ngModel)]="f.barcode" /></div>
+          <div class="field"><label>Código de barra</label>
+            <div class="search-wrap barcode-in">
+              <input [(ngModel)]="f.barcode" (keydown.enter)="$event.preventDefault()" placeholder="Escribilo o escanealo" inputmode="numeric" />
+              <button type="button" class="bc" (click)="camaraCodigo.set(true)" title="Escanear con la cámara"><i class="fa-solid fa-camera"></i></button>
+            </div>
+            @if (codigoRepetido(f); as otro) { <small style="color: #a5620a">Ya lo tiene «{{ otro }}».</small> }
+            @else { <small class="muted">Escribilo, usá un lector (con el cursor acá) o la cámara.</small> }
+          </div>
           <div class="field"><label>Categoría</label><select [(ngModel)]="f.categoryId"><option [ngValue]="null">—</option>@for (c of store.categories(); track c.id) {<option [ngValue]="c.id">{{ c.name }}</option>}</select></div>
           <div class="field"><label>Proveedor (opcional)</label><select [(ngModel)]="f.supplierId"><option [ngValue]="null">Sin proveedor</option>@for (s of store.suppliers(); track s.id) {<option [ngValue]="s.id">{{ s.name }}</option>}</select></div>
         </div>
@@ -195,6 +205,7 @@ type StockFilter = '' | 'ideal' | 'critico' | 'sin';
         <div class="mf"><span class="muted">{{ filasImport().length }} producto(s)</span><button (click)="bulkImport.set(false)">Cancelar</button><button class="cta" [disabled]="!filasImport().length" (click)="importar()">Importar</button></div>
       </app-modal>
     }
+    @if (camaraCodigo()) { <app-camara-scanner [mensaje]="msgCodigo()" (codigo)="alLeerCodigo($event)" (closed)="camaraCodigo.set(false)" /> }
   `,
 })
 export class StockComponent {
@@ -226,8 +237,33 @@ export class StockComponent {
     const url = URL.createObjectURL(new Blob([filas.map((r) => r.join(';')).join('\n')], { type: 'text/csv' }));
     const a = document.createElement('a'); a.href = url; a.download = 'stock.csv'; a.click(); URL.revokeObjectURL(url);
   }
-  imprimir() { window.print(); }
+  /** Imprime sólo el listado de productos (lo que muestra la tabla con los filtros y la lista de precios elegida). */
+  imprimir() {
+    const w = window.open('', '_blank', 'width=900,height=700'); if (!w) return;
+    const esc = (x: unknown) => String(x ?? '').replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c] as string));
+    const dinero = (n: number) => '$ ' + n.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const lista = this.listas().find((l) => l.id === this.listaId())?.name ?? 'Principal';
+    const filas = this.filtrados().map((p) => `<tr><td>${esc(p.name)}</td><td>${esc(p.barcode)}</td><td>${esc(this.catName(p) ?? '')}</td><td>${esc(this.store.supplier(p.supplierId)?.name ?? '')}</td><td class="r">${dinero(this.precioVer(p))}</td><td class="r">${this.store.stockOf(p)}</td></tr>`).join('');
+    w.document.write(`<html><head><title>Stock</title><style>body{font-family:Arial,sans-serif;font-size:12px;margin:24px}h1{font-size:18px;margin:0}p{margin:2px 0 14px;color:#555}table{width:100%;border-collapse:collapse}th,td{border-bottom:1px solid #ddd;padding:6px 8px;text-align:left}th{background:#f3f3f3;font-size:11px;text-transform:uppercase}.r{text-align:right}</style></head><body><h1>${esc(this.store.settings().businessName)} · Stock</h1><p>Lista de precios: ${esc(lista)} · ${new Date().toLocaleString('es-AR')} · ${this.filtrados().length} productos</p><table><tr><th>Producto</th><th>Código</th><th>Categoría</th><th>Proveedor</th><th class="r">Precio</th><th class="r">Stock</th></tr>${filas}</table></body></html>`);
+    w.document.close(); w.focus(); w.print();
+  }
   readonly fotoError = signal('');
+  readonly camaraCodigo = signal(false);
+  readonly msgCodigo = signal('');
+  /** Nombre del producto que ya tiene ese código (para avisar antes de guardar un duplicado). */
+  codigoRepetido(f: any): string {
+    const c = String(f.barcode ?? '').trim();
+    if (!c) return '';
+    return this.store.db().products.find((p) => p.barcode === c && p.id !== f.id)?.name ?? '';
+  }
+  /** Código leído con la cámara: queda cargado en el formulario y se cierra el lector. */
+  alLeerCodigo(code: string) {
+    const f = this.form();
+    if (f) f.barcode = code;
+    beep(true);
+    this.msgCodigo.set('✔ Código leído: ' + code);
+    this.camaraCodigo.set(false);
+  }
   /** Reduce la foto a 200 px (lado mayor) en JPEG y la deja en el formulario. */
   subirFoto(ev: Event, f: any) {
     const input = ev.target as HTMLInputElement, file = input.files?.[0];

@@ -178,7 +178,7 @@ interface CartLine { productId: string; name: string; qty: number; price: number
     @if (rapido(); as r) {
       <app-modal title="Nuevo producto" [width]="420" (closed)="rapido.set(null)">
         <div class="field"><label>Nombre</label><input [(ngModel)]="r.name" /></div>
-        @if (r.barcode) { <p class="sub" style="margin: 6px 0 0"><i class="fa-solid fa-barcode"></i> Código: <b>{{ r.barcode }}</b></p> }
+        <div class="field" style="margin-top: 8px"><label>Código de barra (opcional)</label><input [(ngModel)]="r.barcode" (keydown.enter)="$event.preventDefault()" placeholder="Escribilo o escanealo con el lector" inputmode="numeric" /></div>
         <div class="grid2" style="margin-top: 8px"><div class="field"><label>Precio</label><input type="number" [(ngModel)]="r.price" /></div><div class="field"><label>Costo</label><input type="number" [(ngModel)]="r.cost" /></div></div>
         <div class="mf"><button (click)="rapido.set(null)">Cancelar</button><button class="cta" [disabled]="!r.name.trim()" (click)="crearRapido(r)">Aceptar</button></div>
       </app-modal>
