@@ -1,34 +1,39 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ModalComponent } from '../../shared/modal.component';
-import { FdatePipe, FtimePipe, MoneyPipe } from '../../shared/format';
+import { AvcolorPipe, FdatePipe, FtimePipe, MoneyPipe } from '../../shared/format';
 import { Store, r2 } from '../../core/store';
 import { Purchase, PurchaseLine } from '../../core/models';
 
 /** Compras y pedidos (réplica de Envi): asistente de 3 pasos, Borrador → Pedido → Recibido. Ver ANALISIS_facturas_compras.md */
 @Component({
   selector: 'app-compras',
-  imports: [FormsModule, ModalComponent, MoneyPipe, FdatePipe, FtimePipe],
+  imports: [FormsModule, ModalComponent, MoneyPipe, FdatePipe, FtimePipe, AvcolorPipe],
   template: `
     @if (vista() === 'lista') {
       <h1>Compras y pedidos</h1>
       <p class="sub">Registrá las compras a proveedores y seguí sus pedidos.</p>
       <small class="muted">COMPRAS DE ESTE MES</small>
       <div class="kpis k3" style="margin-top: 6px">
-        <div class="kpi"><small>Pedidos abiertos</small><strong>{{ abiertos() }}</strong><br /><span class="muted">Este mes</span></div>
-        <div class="kpi"><small>Monto comprado</small><strong>{{ montoMes() | money }}</strong><br /><span class="muted">Este mes</span></div>
-        <div class="kpi"><small>Estado de la cartera · {{ store.db().purchases.length }} pedidos</small>
+        <div class="kpi ic-cart"><small>Pedidos abiertos</small><strong>{{ abiertos() }}</strong><br /><span class="muted">Este mes</span></div>
+        <div class="kpi ic-dollar"><small>Monto comprado</small><strong>{{ montoMes() | money }}</strong><br /><span class="muted">Este mes</span></div>
+        <div class="kpi"><small>Estado de la cartera <span style="float: right">{{ store.db().purchases.length }} PEDIDOS</span></small>
           <div class="bar"><i [style.flex]="n('recibido')" style="background: var(--success)"></i><i [style.flex]="n('pedido')" style="background: var(--accent-blue)"></i><i [style.flex]="n('borrador')" style="background: #bbb"></i></div>
-          <span class="muted">Recibido {{ n('recibido') }} · Pedido {{ n('pedido') }} · Borrador {{ n('borrador') }}</span></div>
+          <div class="legend"><span><i class="dot" style="background: var(--success)"></i>Recibido {{ pc(n('recibido')) }}%</span><span><i class="dot" style="background: var(--accent-blue)"></i>Pedido {{ pc(n('pedido')) }}%</span><span><i class="dot" style="background: #bbb"></i>Borrador {{ pc(n('borrador')) }}%</span></div></div>
       </div>
-      <div class="toolbar"><span class="sp"></span><button class="cta" (click)="nuevo()">Crear pedido</button></div>
+      <div class="toolbar"><input class="search" placeholder="Buscar..." [ngModel]="qLista()" (ngModelChange)="qLista.set($event)" />
+        <button><i class="fa-solid fa-filter"></i>Filtrar</button><span class="sp"></span>
+        <button class="iconbtn" (click)="refrescar()" title="Actualizar"><i class="fa-solid fa-rotate-right"></i></button>
+        <button class="cta" (click)="nuevo()"><i class="fa-solid fa-plus"></i>Crear pedido</button></div>
       <table>
-        <tr><th>Fecha</th><th>Pedido</th><th>Proveedor</th><th>Creado por</th><th class="right">Total</th><th>Estado</th></tr>
+        <tr><th>Fecha</th><th>Pedido</th><th>Proveedor</th><th>Creado por</th><th class="right">Total</th><th>Estado</th><th></th></tr>
         @for (p of lista(); track p.id) {
-          <tr style="cursor: pointer" (click)="abrir(p.id)"><td>{{ p.createdAt | fdate }} {{ p.createdAt | ftime }}</td><td><b>P-{{ p.number }}</b></td>
-            <td><span class="av">{{ (store.supplier(p.supplierId)?.name ?? '?')[0] }}</span>{{ store.supplier(p.supplierId)?.name }}</td><td>{{ p.user }}</td><td class="right">{{ p.total | money }}</td>
-            <td><span class="badge" [class]="'badge ' + clase(p.status)">{{ etiqueta(p.status) }}</span></td></tr>
-        } @empty { <tr><td colspan="6" class="empty">Todavía no hay pedidos. Creá el primero con «Crear pedido».</td></tr> }
+          <tr style="cursor: pointer" (click)="abrir(p.id)"><td><b>{{ p.createdAt | fdate }}</b><br /><small class="muted">{{ p.createdAt | ftime }}</small></td><td><b>P-{{ p.number }}</b> <i class="fa-solid fa-chevron-right" style="font-size: 9px; margin: 0"></i></td>
+            <td><span class="av round" [style.background]="(store.supplier(p.supplierId)?.name ?? '?') | avcolor">{{ (store.supplier(p.supplierId)?.name ?? '?')[0] }}</span>{{ store.supplier(p.supplierId)?.name }}</td>
+            <td><span class="av" [style.background]="p.user | avcolor">{{ p.user[0] }}</span><b>{{ p.user }}</b></td><td class="right"><b>{{ p.total | money }}</b></td>
+            <td><span class="est est-{{ p.status }}"><i class="fa-solid {{ estIcono(p.status) }}"></i>{{ etiqueta(p.status) }}</span></td>
+            <td class="right"><i class="fa-solid fa-ellipsis-vertical" style="margin: 0; color: var(--text-soft)"></i></td></tr>
+        } @empty { <tr><td colspan="7" class="empty">Todavía no hay pedidos. Creá el primero con «Crear pedido».</td></tr> }
       </table>
     }
 
@@ -120,6 +125,10 @@ import { Purchase, PurchaseLine } from '../../core/models';
   `,
 })
 export class ComprasComponent {
+  readonly qLista = signal('');
+  pc(n: number): number { const total = this.store.db().purchases.length; return total ? Math.round((n / total) * 100) : 0; }
+  estIcono(s: string): string { return s === 'recibido' ? 'fa-circle-check' : s === 'pedido' ? 'fa-circle-arrow-right' : 'fa-pen'; }
+  refrescar() { if (this.store.remote()) this.store.sync(); }
   readonly store = inject(Store);
   readonly vista = signal<'lista' | 'nuevo' | 'detalle'>('lista');
   readonly paso = signal(1);
@@ -131,7 +140,10 @@ export class ComprasComponent {
   lineas: PurchaseLine[] = [];
   max = Math.max;
 
-  readonly lista = computed(() => [...this.store.db().purchases].reverse());
+  readonly lista = computed(() => {
+    const q = this.qLista().trim().toLowerCase();
+    return [...this.store.db().purchases].reverse().filter((p) => !q || `p-${p.number}`.includes(q) || (this.store.supplier(p.supplierId)?.name ?? '').toLowerCase().includes(q) || p.user.toLowerCase().includes(q));
+  });
   readonly actual = computed<Purchase | undefined>(() => this.store.db().purchases.find((p) => p.id === this.sel()));
   private mes(iso: string) { const d = new Date(iso), n = new Date(); return d.getMonth() === n.getMonth() && d.getFullYear() === n.getFullYear(); }
   abiertos() { return this.store.db().purchases.filter((p) => p.status !== 'recibido').length; }

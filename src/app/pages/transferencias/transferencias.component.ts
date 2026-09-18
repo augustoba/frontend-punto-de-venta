@@ -22,27 +22,28 @@ interface Draft { fromId: number | null; toId: number | null; notes: string; lin
       <div class="card" style="padding:20px">Esta pantalla necesita la conexión con la API. Iniciá el servidor y volvé a cargar la página.</div>
     } @else {
       <div class="toolbar">
-        @for (w of depositos(); track w.id) { <span class="badge" [class.b-blue]="w.main">{{ w.main ? '★ ' : '' }}{{ w.name }}</span> }
+        <input class="search" placeholder="Buscar..." [ngModel]="q()" (ngModelChange)="q.set($event)" />
         <span class="sp"></span>
-        <button (click)="nuevoDeposito()">+ Nuevo depósito</button>
-        <button class="cta" [disabled]="depositos().length < 2" (click)="abrir()">+ Nueva transferencia</button>
+        <button class="iconbtn" (click)="cargar()" title="Actualizar"><i class="fa-solid fa-rotate-right"></i></button>
+        <button class="cta" [disabled]="depositos().length < 2" (click)="abrir()"><i class="fa-solid fa-plus"></i>Nueva transferencia</button>
       </div>
-
-      <h3>Stock por depósito</h3>
       <table>
-        <tr><th>Producto</th>@for (w of depositos(); track w.id) { <th>{{ w.name }}</th> }<th>Total</th></tr>
-        @for (r of stock(); track r.productId) {
-          <tr><td><b>{{ r.name }}</b></td>@for (w of depositos(); track w.id) { <td>{{ r.byWarehouse[w.id] }}</td> }<td>{{ r.total }}</td></tr>
-        } @empty { <tr><td [attr.colspan]="depositos().length + 2">Todavía no hay productos.</td></tr> }
+        <tr><th>Transferencias</th><th>Estado</th><th>Productos</th><th>Fecha</th><th>Ver detalles</th></tr>
+        @for (t of visibles(); track t.id) {
+          <tr><td><b>T-{{ t.number }}</b><br /><small class="muted">{{ nombre(t.fromId) }} <i class="fa-solid fa-arrow-right" style="font-size: 9px; margin: 0 3px"></i> {{ nombre(t.toId) }}</small></td>
+            <td><span class="est est-recibido"><i class="fa-solid fa-circle-check"></i>Completada</span></td>
+            <td>{{ t.lines.length }} {{ t.lines.length === 1 ? 'producto' : 'productos' }}</td>
+            <td><b>{{ t.occurredAt | fdate }}</b><br /><small class="muted">{{ t.occurredAt | ftime }}</small></td>
+            <td><a class="link" (click)="detalle.set(t)">Ver detalles<i class="fa-solid fa-chevron-down"></i></a></td></tr>
+        } @empty { <tr><td colspan="5" class="empty">No se encontraron movimientos de stock</td></tr> }
       </table>
 
-      <h3 style="margin-top:24px">Historial</h3>
+      <div class="row between" style="margin: 26px 0 8px"><h3 style="margin: 0">Depósitos</h3><button (click)="nuevoDeposito()"><i class="fa-solid fa-plus"></i>Nuevo depósito</button></div>
       <table>
-        <tr><th>Fecha</th><th>N°</th><th>Origen</th><th>Destino</th><th>Detalle</th><th>Usuario</th></tr>
-        @for (t of transfers(); track t.id) {
-          <tr><td>{{ t.occurredAt | fdate }} {{ t.occurredAt | ftime }}</td><td><b>T-{{ t.number }}</b></td><td>{{ nombre(t.fromId) }}</td><td>{{ nombre(t.toId) }}</td>
-            <td>{{ resumen(t) }}</td><td>{{ t.username }}</td></tr>
-        } @empty { <tr><td colspan="6">Todavía no hay transferencias.</td></tr> }
+        <tr><th>Producto</th>@for (w of depositos(); track w.id) { <th>{{ w.name }}@if (w.main) { <span class="badge b-blue" style="margin-left: 6px; text-transform: none">principal</span> }</th> }<th>Total</th></tr>
+        @for (r of stock(); track r.productId) {
+          <tr><td><b>{{ r.name }}</b></td>@for (w of depositos(); track w.id) { <td>{{ r.byWarehouse[w.id] }}</td> }<td><b>{{ r.total }}</b></td></tr>
+        } @empty { <tr><td [attr.colspan]="depositos().length + 2" class="empty">Todavía no hay productos.</td></tr> }
       </table>
     }
     @if (error()) { <div style="margin-top:12px;color:#8a1c1c">{{ error() }}</div> }
@@ -68,6 +69,15 @@ interface Draft { fromId: number | null; toId: number | null; notes: string; lin
         <div class="mf"><button (click)="draft.set(null)">Cancelar</button><button class="cta" [disabled]="!valido(d)" (click)="guardar(d)">Transferir</button></div>
       </app-modal>
     }
+    @if (detalle(); as d) {
+      <app-modal [title]="'Transferencia T-' + d.number" [width]="520" (closed)="detalle.set(null)">
+        <p class="sub" style="margin-top: 0">{{ nombre(d.fromId) }} → {{ nombre(d.toId) }} · {{ d.occurredAt | fdate }} {{ d.occurredAt | ftime }} · {{ d.username }}</p>
+        <table style="background: none"><tr><th>Producto</th><th class="right">Cantidad</th></tr>
+          @for (l of d.lines; track l.productId) { <tr><td>{{ l.name }}</td><td class="right"><b>{{ l.qty }}</b></td></tr> }</table>
+        @if (d.notes) { <p class="muted">Notas: {{ d.notes }}</p> }
+        <div class="mf"><button class="cta" (click)="detalle.set(null)">Aceptar</button></div>
+      </app-modal>
+    }
     @if (depNuevo()) {
       <app-modal title="Nuevo depósito" [width]="420" (closed)="depNuevo.set(false)">
         <label>NOMBRE<input [(ngModel)]="depNombre" /></label>
@@ -84,6 +94,9 @@ export class TransferenciasComponent {
   readonly transfers = signal<Transfer[]>([]);
   readonly draft = signal<Draft | null>(null);
   readonly depNuevo = signal(false);
+  readonly q = signal('');
+  readonly detalle = signal<Transfer | null>(null);
+  readonly visibles = computed(() => { const q = this.q().trim().toLowerCase(); return this.transfers().filter((t) => !q || `t-${t.number}`.includes(q) || t.lines.some((l) => l.name.toLowerCase().includes(q))); });
   readonly error = signal('');
   depNombre = '';
   readonly productos = computed(() => this.store.db().products.filter((p) => !p.archived && !p.combo.length));
