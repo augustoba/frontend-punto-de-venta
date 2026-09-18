@@ -13,7 +13,7 @@ const EMOJIS = ['🛒', '🍞', '🥤', '🍺', '🥛', '🍪', '🧴', '🧹', 
   template: `
     <h1>Categorías</h1>
     <p class="sub">Organizá tus movimientos y tu catálogo con categorías y subcategorías.</p>
-    <div class="toolbar"><input placeholder="🔍 Buscar categoría o subcategoría..." style="width: 300px" [ngModel]="q()" (ngModelChange)="q.set($event)" /><span class="sp"></span><button class="cta" (click)="nueva()">+ Nueva categoría</button></div>
+    <div class="toolbar"><input class="search" placeholder="Buscar categoría o subcategoría..." style="width: 300px" [ngModel]="q()" (ngModelChange)="q.set($event)" /><span class="sp"></span><button class="cta" (click)="nueva()">+ Nueva categoría</button></div>
     @for (c of lista(); track c.id) {
       <div class="card" style="margin-bottom: 10px">
         <div class="row"><span style="padding: 6px; border-radius: 8px" [style.background]="c.color + '33'">{{ c.emoji }}</span><b class="grow" [style.color]="c.color">{{ c.name }} <span class="badge b-blue">{{ c.subs.length }}</span></b>

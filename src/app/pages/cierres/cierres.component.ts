@@ -12,7 +12,7 @@ import { CashSession } from '../../core/models';
   template: `
     <h1>Cierres de caja</h1>
     <p class="sub">Consultá los cierres de caja de cada turno.</p>
-    <div class="toolbar"><input placeholder="🔍 Buscar..." style="width: 240px" [ngModel]="q()" (ngModelChange)="q.set($event)" /><span class="sp"></span>
+    <div class="toolbar"><input class="search" placeholder="Buscar..." style="width: 240px" [ngModel]="q()" (ngModelChange)="q.set($event)" /><span class="sp"></span>
       <button (click)="difs.set(true)">≡ Diferencias por empleado</button>
       <span class="link" (click)="alertaOpen.set(true)">🔔 Configurar alerta de diferencia</span></div>
     @if (!store.settings().arqueo) { <p class="note info">El arqueo de caja está desactivado. Activalo en Ajustes › Ventas y caja para abrir y cerrar la caja en cada turno.</p> }

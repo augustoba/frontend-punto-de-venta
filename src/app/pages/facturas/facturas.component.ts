@@ -1,29 +1,43 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ModalComponent } from '../../shared/modal.component';
-import { FdatePipe, FtimePipe, MoneyPipe } from '../../shared/format';
+import { AvcolorPipe, FdatePipe, FtimePipe, MoneyPipe } from '../../shared/format';
 import { Store, r2 } from '../../core/store';
 
 /** Facturas (réplica de Envi /invoices). Sin emisión fiscal: comprobantes de prueba sin validez fiscal. */
 @Component({
   selector: 'app-facturas',
-  imports: [FormsModule, ModalComponent, MoneyPipe, FdatePipe, FtimePipe],
+  imports: [FormsModule, ModalComponent, MoneyPipe, FdatePipe, FtimePipe, AvcolorPipe],
   template: `
-    <div class="note warn" style="text-align: center; margin: 0 0 12px">Emisión fiscal no activada. Emitís solo facturas de prueba sin valor fiscal.</div>
-    <h1>Facturas</h1>
-    <p class="sub">Emití y consultá las facturas de tu negocio.</p>
-    <div class="kpis k3">
-      <div class="kpi"><small>Facturas emitidas</small><strong>{{ hoy().length }}</strong><br /><span class="muted">Hoy</span></div>
-      <div class="kpi"><small>Monto facturado</small><strong>{{ montoHoy() | money }}</strong><br /><span class="muted">Hoy</span></div>
-      <div class="kpi"><small>Total emitidas</small><strong>{{ store.db().invoices.length }}</strong></div>
+    @if (aviso()) {
+      <div class="banner-warn"><span>Emisión fiscal no activada. Emitís solo facturas de prueba sin valor fiscal.</span><button class="x" (click)="aviso.set(false)" aria-label="Cerrar">✕</button></div>
+    }
+    <div class="row between" style="align-items: flex-start"><div><h1>Facturas</h1>
+      <p class="sub">Emití y consultá las facturas de tu negocio.</p></div>
+      <span class="pill-green">Facturas de prueba sin límite</span></div>
+    <small class="muted">FACTURAS DE HOY</small>
+    <div class="kpis k3" style="margin-top: 6px">
+      <div class="kpi ic-receipt"><small>Facturas emitidas</small><strong>{{ hoy().length }}</strong><br /><span class="muted">Hoy</span></div>
+      <div class="kpi ic-dollar"><small>Monto facturado</small><strong>{{ montoHoy() | money }}</strong><br /><span class="muted">Hoy</span></div>
+      <div class="kpi"><small>Facturas por emisor <span style="float: right">{{ store.db().invoices.length }} {{ store.db().invoices.length === 1 ? 'factura' : 'facturas' }}</span></small>
+        <div class="bar"><i style="flex: 1; background: var(--accent-blue)"></i></div>
+        <div class="legend"><span><i class="dot" style="background: var(--accent-blue)"></i>{{ emisor() }} 100%</span></div></div>
     </div>
-    <div class="toolbar"><input placeholder="🔍 Buscar por número o cliente..." style="width: 300px" [ngModel]="q()" (ngModelChange)="q.set($event)" /><span class="sp"></span><button class="cta" (click)="nueva()">+ Nueva factura</button></div>
+    <div class="toolbar"><input class="search" placeholder="Buscar..." [ngModel]="q()" (ngModelChange)="q.set($event)" />
+      <button><i class="fa-solid fa-filter"></i>Filtrar</button><span class="sp"></span>
+      <button class="iconbtn" (click)="refrescar()" title="Actualizar"><i class="fa-solid fa-rotate-right"></i></button>
+      <button class="cta" (click)="nueva()"><i class="fa-solid fa-plus"></i>Nueva factura</button></div>
     <table>
-      <tr><th>Fecha de emisión</th><th>Cliente</th><th class="right">Valor</th><th>Detalles</th><th></th></tr>
+      <tr><th>Fecha de emisión</th><th>Emisor</th><th>Creado por</th><th>Cliente</th><th class="right">Valor</th><th>Detalles</th><th></th></tr>
       @for (f of lista(); track f.id) {
-        <tr><td>{{ f.at | fdate }}<br /><small class="muted">{{ f.at | ftime }}</small></td><td>◉ {{ store.customerName(f.customerId) }}</td><td class="right">{{ f.total | money }}</td>
-          <td><b>Factura C</b> <span class="badge b-amber">De prueba</span><br /><small class="muted">N° {{ f.number }}</small></td><td><span class="link" (click)="imprimir(f)">Imprimir</span></td></tr>
-      } @empty { <tr><td colspan="5" class="empty">Todavía no emitiste facturas.</td></tr> }
+        <tr><td><b>{{ f.at | fdate }}</b><br /><small class="muted">{{ f.at | ftime }}</small></td>
+          <td><b>{{ emisor() }}</b><br /><small class="muted">Emisión de prueba</small></td>
+          <td>@if (f.user) { <span class="av" [style.background]="f.user | avcolor">{{ f.user[0] }}</span><b>{{ f.user }}</b> } @else { <span class="muted">—</span> }</td>
+          <td><span class="av round" style="background: var(--avatar-gray)"><i class="fa-solid fa-user" style="margin: 0; font-size: 11px"></i></span>{{ store.customerName(f.customerId) }}</td>
+          <td class="right"><b>{{ f.total | money }}</b></td>
+          <td><b>Factura C</b> <span class="badge b-amber">De prueba</span><br /><small class="muted">N° {{ f.number }}</small></td>
+          <td class="right"><span class="link" (click)="imprimir(f)" title="Imprimir"><i class="fa-solid fa-print" style="margin: 0"></i></span></td></tr>
+      } @empty { <tr><td colspan="7" class="empty">Todavía no emitiste facturas.</td></tr> }
     </table>
 
     @if (form(); as f) {
@@ -43,6 +57,9 @@ import { Store, r2 } from '../../core/store';
 })
 export class FacturasComponent {
   readonly store = inject(Store);
+  readonly aviso = signal(true);
+  emisor() { return this.store.settings().businessName || 'Mi negocio'; }
+  refrescar() { if (this.store.remote()) this.store.sync(); }
   readonly q = signal(''); readonly form = signal<any>(null);
   private esHoy(iso: string) { return iso.slice(0, 10) === new Date().toISOString().slice(0, 10); }
   readonly hoy = computed(() => this.store.db().invoices.filter((f) => this.esHoy(f.at)));

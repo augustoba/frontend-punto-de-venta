@@ -28,7 +28,7 @@ type StockFilter = '' | 'ideal' | 'critico' | 'sin';
     </div>
 
     <div class="toolbar">
-      <input placeholder="🔍 Buscar por nombre o código..." style="width: 300px" [ngModel]="q()" (ngModelChange)="q.set($event)" />
+      <input class="search" placeholder="Buscar por nombre o código..." style="width: 300px" [ngModel]="q()" (ngModelChange)="q.set($event)" />
       <button (click)="showFilters.set(!showFilters())">Filtrar</button>
       <span class="sp"></span>
       <div class="menu">

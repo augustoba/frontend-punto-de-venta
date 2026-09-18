@@ -99,7 +99,7 @@ export interface FixedCost { id: string; name: string; monthly: number; notes: s
 export interface CostCenter { id: string; name: string; allocation: Allocation; costs: FixedCost[]; }
 
 export interface Invoice {
-  id: string; number: string; at: Iso; customerId: string | null; total: number; net: number; iva: number; items: string;
+  id: string; number: string; at: Iso; customerId: string | null; total: number; net: number; iva: number; items: string; user: string;
 }
 
 export interface Employee { id: string; name: string; lastName: string; email: string; role: 'admin' | 'vendedor'; hired: Iso; }

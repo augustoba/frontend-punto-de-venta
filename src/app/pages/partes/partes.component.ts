@@ -44,7 +44,7 @@ const CHIP: Record<string, [string, string]> = {
           <span class="muted">Al día {{ alDia() }} · {{ es() ? 'Saldo a cobrar' : 'Saldo a pagar' }} {{ conDeuda() }}</span></div>
       </div>
       <div class="toolbar">
-        <input placeholder="🔍 Buscar..." style="width: 270px" [ngModel]="q()" (ngModelChange)="q.set($event)" /><span class="sp"></span>
+        <input class="search" placeholder="Buscar..." style="width: 270px" [ngModel]="q()" (ngModelChange)="q.set($event)" /><span class="sp"></span>
         <button (click)="mov(null)">⇄ Registrar movimiento</button>
         <button class="cta" (click)="nuevo()">{{ es() ? 'Nuevo cliente' : 'Crear proveedor' }}</button>
       </div>

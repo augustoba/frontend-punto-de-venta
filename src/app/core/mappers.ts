@@ -89,7 +89,7 @@ export const mapBudget = (x: any): Budget => ({
   total: num(x.total), notes: x.notes ?? '', status: lower(x.status) as Budget['status'], user: x.username ?? '',
 });
 
-export const mapInvoice = (x: any): Invoice => ({ id: s(x.id), number: x.number, at: x.occurredAt, customerId: id(x.customerId), total: num(x.total), net: num(x.net), iva: num(x.iva), items: x.items ?? '' });
+export const mapInvoice = (x: any): Invoice => ({ id: s(x.id), number: x.number, at: x.occurredAt, customerId: id(x.customerId), total: num(x.total), net: num(x.net), iva: num(x.iva), items: x.items ?? '', user: x.username ?? '' });
 
 export const mapCheque = (x: any): Cheque => ({ id: s(x.id), kind: lower(x.kind) as Cheque['kind'], amount: num(x.amount), due: x.due, number: x.number ?? '', collected: !!x.collected, customerId: id(x.customerId), description: x.description ?? '' });
 

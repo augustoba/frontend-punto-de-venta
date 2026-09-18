@@ -198,3 +198,28 @@ table.mini{background:transparent;border:0;box-shadow:none;margin:0 0 6px}table.
 .pill-blue{background:rgba(5,133,254,.13);color:#0a6fd6;border-radius:99px;padding:2px 12px;font-size:11px;font-weight:800}
 .com-row{width:100%;height:auto;margin-top:12px;padding:8px 12px;border:1px solid var(--divider-color);background:rgba(0,0,0,.035);border-radius:10px;display:flex;align-items:center;gap:8px;font-weight:600;color:var(--text-soft)}
 .com-row span:nth-child(2){margin-left:auto}
+
+/* ===== lote 3: buscador reutilizable, íconos de KPI por clase, estados vacíos ===== */
+input.search{height:42px;min-width:240px;border:0;border-radius:14px;padding-left:38px;background:rgba(255,255,255,.55) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='7' cy='7' r='4.6' fill='none' stroke='%239a9a9a' stroke-width='1.6'/%3E%3Cpath d='M10.6 10.6 14 14' stroke='%239a9a9a' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat 13px center/15px;box-shadow:inset 0 0 0 1px var(--divider-color)}
+td.empty{background:rgba(0,0,0,.045);text-align:center;font-weight:700;color:var(--text-soft);padding:38px 16px}
+.kpi .big{float:right;font-size:22px;font-weight:800}
+.kpis>.kpi.ic-file::before{content:"\f15c";color:#0585fe;background:rgba(5,133,254,.12)}
+.kpis>.kpi.ic-clock::before{content:"\f017";color:#d1465a;background:rgba(209,70,90,.13)}
+.kpis>.kpi.ic-tag::before{content:"\f02b";color:#0585fe;background:rgba(5,133,254,.12)}
+.kpis>.kpi.ic-dollar::before{content:"\24";color:#1f9d63;background:rgba(31,157,99,.13)}
+.kpis>.kpi.ic-box::before{content:"\f468";color:#7c5cd6;background:rgba(124,92,214,.14)}
+.kpis>.kpi.ic-users::before{content:"\f0c0";color:#0585fe;background:rgba(5,133,254,.12)}
+.kpis>.kpi.ic-truck::before{content:"\f0d1";color:#d9822b;background:rgba(217,130,43,.14)}
+.kpis>.kpi.ic-bank::before{content:"\f19c";color:#1f9d63;background:rgba(31,157,99,.13)}
+.kpis>.kpi.ic-cart::before{content:"\f07a";color:#7c5cd6;background:rgba(124,92,214,.14)}
+.kpis>.kpi.ic-wallet::before{content:"\f555";color:#d9822b;background:rgba(217,130,43,.14)}
+.kpis>.kpi.ic-chart::before{content:"\f201";color:#d9822b;background:rgba(217,130,43,.14)}
+.kpis>.kpi.ic-warn::before{content:"\f071";color:#d1465a;background:rgba(209,70,90,.13)}
+.kpis>.kpi.ic-check::before{content:"\f00c";color:#1f9d63;background:rgba(31,157,99,.13)}
+.kpis>.kpi.ic-cash::before{content:"\f788";color:#1f9d63;background:rgba(31,157,99,.13)}
+.kpis>.kpi.ic-receipt::before{content:"\f570";color:#0585fe;background:rgba(5,133,254,.12)}
+.filtro-panel{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px}
+
+.banner-warn{display:flex;align-items:center;justify-content:center;gap:12px;position:relative;background:rgba(240,200,150,.55);color:#8a5a14;border-radius:0 0 12px 12px;padding:9px 40px;margin:-18px -24px 16px;font-weight:600;font-size:13px}
+.banner-warn .x{position:absolute;right:14px;top:6px;height:auto;width:auto;border:0;background:none;padding:2px 6px;color:#8a5a14}
+.pill-green{background:rgba(31,157,99,.16);color:#2c7a3f;border-radius:99px;padding:4px 14px;font-size:12px;font-weight:800;white-space:nowrap}

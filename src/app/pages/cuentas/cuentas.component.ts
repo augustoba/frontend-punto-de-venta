@@ -39,7 +39,7 @@ const ALLOC: { v: Allocation; label: string; desc: string }[] = [
     </div>
 
     <div class="toolbar">
-      <input placeholder="🔍 Buscar..." style="width: 240px" [ngModel]="q()" (ngModelChange)="q.set($event)" />
+      <input class="search" placeholder="Buscar..." style="width: 240px" [ngModel]="q()" (ngModelChange)="q.set($event)" />
       <select [ngModel]="fCuenta()" (ngModelChange)="fCuenta.set($event)"><option value="">Todas las cuentas</option>@for (a of store.accounts(); track a.id) { <option [value]="a.id">{{ a.name }}</option> }</select>
       <span class="sp"></span>
       <button (click)="centros.set(true)">◔ Centros de costos</button>

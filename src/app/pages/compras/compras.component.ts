@@ -43,7 +43,7 @@ import { Purchase, PurchaseLine } from '../../core/models';
       @if (paso() === 1) {
         <div class="grid2">
           <div class="card"><small class="muted">ELEGÍ EL PROVEEDOR</small>
-            <input placeholder="🔍 Buscar proveedor por nombre, contacto o CUIT" style="width: 100%; margin: 8px 0" [ngModel]="qProv()" (ngModelChange)="qProv.set($event)" />
+            <input class="search" placeholder="Buscar proveedor por nombre, contacto o CUIT" style="width: 100%; margin: 8px 0" [ngModel]="qProv()" (ngModelChange)="qProv.set($event)" />
             @for (s of proveedores(); track s.id) {
               <div class="card" style="margin-bottom: 6px; cursor: pointer" [style.border-color]="s.id === provId ? 'var(--accent-blue)' : ''" (click)="provId = s.id">
                 <span class="av">{{ s.name[0] }}</span><b>{{ s.name }}</b> @if (s.id === provId) { <span class="badge sel" style="float: right">Elegido</span> }<br /><small class="muted">{{ s.contact }} {{ s.phone }}</small></div>
@@ -59,7 +59,7 @@ import { Purchase, PurchaseLine } from '../../core/models';
 
       @if (paso() === 2) {
         <div class="card"><small class="muted">BUSCAR EN EL CATÁLOGO</small> <button style="float: right" (click)="prodNuevo = !prodNuevo">+ Agregar producto nuevo</button>
-          <input placeholder="🔍 Nombre o código del producto" style="width: 100%; margin: 8px 0" [ngModel]="qProd()" (ngModelChange)="qProd.set($event)" />
+          <input class="search" placeholder="Nombre o código del producto" style="width: 100%; margin: 8px 0" [ngModel]="qProd()" (ngModelChange)="qProd.set($event)" />
           @if (prodNuevo) { <div class="row" style="margin-bottom: 8px"><input class="grow" placeholder="Nombre" [(ngModel)]="pn.name" /><input type="number" style="width: 110px" placeholder="Costo" [(ngModel)]="pn.cost" /><input type="number" style="width: 110px" placeholder="Precio" [(ngModel)]="pn.price" /><button class="cta" [disabled]="!pn.name.trim()" (click)="crearProd()">Crear</button></div> }
           <table style="background: none"><tr><th>Producto</th><th>Código</th><th class="right">Último costo</th><th></th></tr>
             @for (p of catalogo(); track p.id) { <tr><td><b>{{ p.name }}</b></td><td>{{ p.barcode }}</td><td class="right">{{ p.cost | money }}</td><td class="right">

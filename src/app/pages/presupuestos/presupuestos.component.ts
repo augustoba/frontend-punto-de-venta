@@ -2,38 +2,43 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ModalComponent } from '../../shared/modal.component';
-import { FdatePipe, MoneyPipe } from '../../shared/format';
+import { AvcolorPipe, FdatePipe, MoneyPipe } from '../../shared/format';
 import { Store, r2 } from '../../core/store';
 import { Budget, BudgetLine } from '../../core/models';
 
 /** Presupuestos (réplica de Envi /budgets): se convierten en venta desde la caja. Ver ANALISIS_presupuestos_descuentos.md */
 @Component({
   selector: 'app-presupuestos',
-  imports: [FormsModule, ModalComponent, MoneyPipe, FdatePipe],
+  imports: [FormsModule, ModalComponent, MoneyPipe, FdatePipe, AvcolorPipe],
   template: `
     <h1>Presupuestos</h1>
     <p class="sub">Armá presupuestos y convertilos en ventas.</p>
     <small class="muted">PRESUPUESTOS DE ESTE MES</small>
     <div class="kpis k3" style="margin-top: 6px">
-      <div class="kpi"><small>Presupuestos activos</small><strong>{{ cuenta('activo', false) }}</strong><br /><span class="muted">Este mes</span></div>
-      <div class="kpi"><small>Presupuestos vencidos</small><strong>{{ cuenta('activo', true) }}</strong><br /><span class="muted">Este mes</span></div>
-      <div class="kpi"><small>Monto total presupuestado</small> <b style="float: right; font-size: 20px">{{ montoTotal() | money }}</b>
+      <div class="kpi ic-file"><small>Presupuestos activos</small><strong>{{ cuenta('activo', false) }}</strong><br /><span class="muted">Este mes</span></div>
+      <div class="kpi ic-clock"><small>Presupuestos vencidos</small><strong>{{ cuenta('activo', true) }}</strong><br /><span class="muted">Este mes</span></div>
+      <div class="kpi"><small>Monto total presupuestado</small> <b class="big">{{ montoTotal() | money }}</b>
         <div class="bar"><i [style.flex]="cuenta('activo', false)" style="background: var(--accent-blue)"></i><i [style.flex]="cuenta('vendido')" style="background: var(--success)"></i></div>
-        <span class="muted">Activos {{ cuenta('activo', false) }} · Vendidos {{ cuenta('vendido') }}</span></div>
+        <div class="legend"><span><i class="dot" style="background: var(--accent-blue)"></i>Activos {{ pct(cuenta('activo', false)) }}%</span><span><i class="dot" style="background: var(--success)"></i>Vendidos {{ pct(cuenta('vendido')) }}%</span></div></div>
     </div>
-    <div class="toolbar"><input placeholder="🔍 Buscar..." style="width: 270px" [ngModel]="q()" (ngModelChange)="q.set($event)" />
-      <select [ngModel]="estado()" (ngModelChange)="estado.set($event)"><option value="activo">Activos</option><option value="vendido">Vendidos</option><option value="rechazado">Rechazados</option><option value="archivado">Archivados</option><option value="">Todos</option></select>
-      <span class="sp"></span><button class="cta" (click)="nuevo()">+ Nuevo presupuesto</button></div>
+    <div class="toolbar"><input class="search" placeholder="Buscar..." [ngModel]="q()" (ngModelChange)="q.set($event)" />
+      <button (click)="filtros.set(!filtros())"><i class="fa-solid fa-filter"></i>Filtrar</button>
+      <span class="sp"></span><button class="iconbtn" (click)="refrescar()" title="Actualizar"><i class="fa-solid fa-rotate-right"></i></button>
+      <button class="cta" (click)="nuevo()"><i class="fa-solid fa-plus"></i>Nuevo presupuesto</button></div>
+    @if (filtros()) {
+      <div class="card filtro-panel"><div class="field"><label>Estado</label>
+        <select [ngModel]="estado()" (ngModelChange)="estado.set($event)"><option value="activo">Activos</option><option value="vendido">Vendidos</option><option value="rechazado">Rechazados</option><option value="archivado">Archivados</option><option value="">Todos</option></select></div></div>
+    }
     <table>
-      <tr><th>Fecha</th><th>Cliente</th><th class="right">Total</th><th>Detalle</th><th>Vencimiento</th><th>Estado</th><th></th></tr>
+      <tr><th>Fecha</th><th>Creado por</th><th>Cliente</th><th class="right">Total</th><th>Detalle</th><th>Vencimiento</th><th>Estado</th><th></th></tr>
       @for (b of lista(); track b.id) {
-        <tr><td><b>{{ b.createdAt | fdate }}</b></td><td>{{ store.customerName(b.customerId) }}</td><td class="right">{{ b.total | money }}</td><td>{{ b.lines.length }} prod.</td><td>{{ b.expires | fdate }}</td>
+        <tr><td><b>{{ b.createdAt | fdate }}</b></td><td><span class="av" [style.background]="b.user | avcolor">{{ b.user[0] }}</span><b>{{ b.user }}</b></td><td>{{ store.customerName(b.customerId) }}</td><td class="right">{{ b.total | money }}</td><td>{{ b.lines.length }} prod.</td><td>{{ b.expires | fdate }}</td>
           <td><span class="badge" [class]="'badge ' + clase(b)">{{ etiqueta(b) }}</span></td>
           <td class="right"><div class="menu"><button class="x" (click)="menu.set(menu() === b.id ? '' : b.id)">⋮</button>
             @if (menu() === b.id) { <div class="pop"><button (click)="editar(b); menu.set('')">Editar</button><button (click)="imprimir(b); menu.set('')">Imprimir</button><button (click)="duplicar(b); menu.set('')">Duplicar</button>
               @if (b.status === 'activo') { <button (click)="convertir(b)">Convertir a venta</button><button (click)="store.setBudgetStatus(b.id, 'rechazado'); menu.set('')">Rechazar presupuesto</button> }
               <button (click)="store.setBudgetStatus(b.id, 'archivado'); menu.set('')">Archivar</button><button class="danger" (click)="store.deleteBudget(b.id); menu.set('')">Eliminar</button></div> }</div></td></tr>
-      } @empty { <tr><td colspan="7" class="empty">No se encontraron presupuestos</td></tr> }
+      } @empty { <tr><td colspan="8" class="empty">No se encontraron presupuestos</td></tr> }
     </table>
 
     @if (form(); as f) {
@@ -56,6 +61,9 @@ import { Budget, BudgetLine } from '../../core/models';
 export class PresupuestosComponent {
   readonly store = inject(Store);
   private readonly router = inject(Router);
+  readonly filtros = signal(false);
+  pct(n: number): number { const t = this.cuenta('activo', false) + this.cuenta('vendido'); return t ? Math.round((n / t) * 100) : 0; }
+  refrescar() { if (this.store.remote()) this.store.sync(); }
   readonly q = signal(''); readonly estado = signal('activo'); readonly menu = signal(''); readonly form = signal<any>(null);
   agregarId = '';
 

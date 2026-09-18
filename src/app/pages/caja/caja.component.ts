@@ -36,7 +36,7 @@ interface CartLine { productId: string; name: string; qty: number; price: number
             <div class="card">
               <b>Agregar producto</b>
               <div class="field" style="margin-top: 10px"><label>Buscar</label>
-                <input #buscador placeholder="🔍 Nombre o código" [ngModel]="q()" (ngModelChange)="q.set($event)" (keydown.enter)="enter()" (keydown.escape)="q.set('')" style="width: 100%" /></div>
+                <input #buscador class="search" placeholder="Nombre o código" [ngModel]="q()" (ngModelChange)="q.set($event)" (keydown.enter)="enter()" (keydown.escape)="q.set('')" style="width: 100%" /></div>
               <button style="margin-top: 8px; width: 100%" (click)="camara.set(true)"><i class="fa-solid fa-camera"></i> Escanear con la cámara</button>
               @if (aviso() && !camara()) { <p class="sub" style="margin: 8px 0 0" [style.color]="avisoOk() ? '#1f7a4d' : '#8a1c1c'">{{ aviso() }}</p> }
             </div>

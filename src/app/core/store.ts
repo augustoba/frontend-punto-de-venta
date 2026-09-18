@@ -309,12 +309,12 @@ export class Store {
   }
   private pushInvoice(d: Db, s: Sale): void {
     const net = r2(s.total / 1.21);
-    d.invoices.push({ id: this.newId(d, 'f'), number: `0001-${String(this.nextSeq(d, 'inv')).padStart(6, '0')}`, at: s.at, customerId: s.customerId, total: s.total, net, iva: r2(s.total - net), items: s.lines.map((l) => l.name).join(', ') });
+    d.invoices.push({ id: this.newId(d, 'f'), number: `000001-${String(this.nextSeq(d, 'inv')).padStart(6, '0')}`, at: s.at, customerId: s.customerId, total: s.total, net, iva: r2(s.total - net), items: s.lines.map((l) => l.name).join(', '), user: s.seller });
   }
   createInvoice(customerId: string | null, items: string, total: number, ivaRate = 21): void {
     this.mut((d) => {
       const net = r2(total / (1 + ivaRate / 100));
-      d.invoices.push({ id: this.newId(d, 'f'), number: `0001-${String(this.nextSeq(d, 'inv')).padStart(6, '0')}`, at: nowIso(), customerId, total: r2(total), net, iva: r2(total - net), items });
+      d.invoices.push({ id: this.newId(d, 'f'), number: `000001-${String(this.nextSeq(d, 'inv')).padStart(6, '0')}`, at: nowIso(), customerId, total: r2(total), net, iva: r2(total - net), items, user: d.user });
     });
   }
   deleteSale(id: string): void {
