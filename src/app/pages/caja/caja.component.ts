@@ -6,6 +6,7 @@ import { CamaraScannerComponent } from '../../shared/camara-scanner.component';
 import { ScanBuffer, beep } from '../../core/scanner';
 import { MoneyPipe } from '../../shared/format';
 import { Api } from '../../core/api';
+import { Auth } from '../../core/auth';
 import { Store, r2 } from '../../core/store';
 import { PayMethod, Product } from '../../core/models';
 
@@ -16,11 +17,19 @@ interface CartLine { productId: string; name: string; qty: number; price: number
   selector: 'app-caja',
   imports: [FormsModule, RouterLink, ModalComponent, MoneyPipe, CamaraScannerComponent],
   template: `
+    <div class="animated-bg" aria-hidden="true"><i></i><i></i><i></i></div>
     <div class="cash">
+      <div class="topbar cash-bar">
+        <div class="biz">
+          <a routerLink="/ventas" class="hamb" title="Volver al panel"><i class="fa-solid fa-bars"></i></a>
+          @if (store.settings().logo) { <img class="biz-logo" [src]="store.settings().logo" alt="Logo" /> } @else { <a class="biz-logo empty" routerLink="/ajustes" title="Subí tu logo en Ajustes">TU<br />LOGO</a> }
+          <b>{{ store.settings().businessName || 'Mi negocio' }}</b>
+        </div>
+        <div class="who"><i class="fa-regular fa-bell" style="color: var(--text-soft)"></i><span>{{ auth.session()?.username ?? store.db().user }}</span><span class="avatar"><i class="fa-solid fa-user"></i></span></div>
+      </div>
       <div class="cash-top">
-        <div class="row"><a routerLink="/ventas" class="link" style="font-size: 20px">←</a>
+        <div class="row"><a routerLink="/ventas" class="link" style="font-size: 18px"><i class="fa-solid fa-arrow-left"></i></a>
           <div><h1>Nueva venta</h1><div class="muted">Agregá productos y guardá la venta</div></div></div>
-        <span class="muted">{{ store.settings().businessName }}</span>
       </div>
 
       @if (!store.canSell()) {
@@ -36,18 +45,19 @@ interface CartLine { productId: string; name: string; qty: number; price: number
             <div class="card">
               <b>Agregar producto</b>
               <div class="field" style="margin-top: 10px"><label>Buscar</label>
-                <input #buscador class="search" placeholder="Nombre o código" [ngModel]="q()" (ngModelChange)="q.set($event)" (keydown.enter)="enter()" (keydown.escape)="q.set('')" style="width: 100%" /></div>
-              <button style="margin-top: 8px; width: 100%" (click)="camara.set(true)"><i class="fa-solid fa-camera"></i> Escanear con la cámara</button>
+                <div class="search-wrap"><input #buscador class="search" placeholder="Nombre o código" [ngModel]="q()" (ngModelChange)="q.set($event)" (keydown.enter)="enter()" (keydown.escape)="q.set('')" style="width: 100%" />
+                  <button class="bc" (click)="camara.set(true)" title="Escanear código de barras con la cámara"><i class="fa-solid fa-barcode"></i></button></div></div>
               @if (aviso() && !camara()) { <p class="sub" style="margin: 8px 0 0" [style.color]="avisoOk() ? '#1f7a4d' : '#8a1c1c'">{{ aviso() }}</p> }
             </div>
-            @if (listas().length > 1) {
-              <div class="card" style="margin-top: 12px"><div class="field"><label>Lista de precios</label>
-                <select [ngModel]="listaId()" (ngModelChange)="elegirLista($event)" style="width: 100%">@for (l of listas(); track l.id) { <option [ngValue]="l.id">{{ l.name }}{{ l.main ? '' : ' (' + (l.percent > 0 ? '+' : '') + l.percent + '%)' }}</option> }</select></div></div>
-            }
+            <div class="card" style="margin-top: 12px"><div class="field"><label>Lista de precios</label>
+              <select [ngModel]="listaId()" (ngModelChange)="elegirLista($event)" style="width: 100%">
+                @for (l of listas(); track l.id) { <option [ngValue]="l.id">{{ l.name }}{{ l.main ? '' : ' (' + (l.percent > 0 ? '+' : '') + l.percent + '%)' }}</option> }
+                @if (!listas().length) { <option [ngValue]="null">Principal</option> }
+              </select></div></div>
             <div class="card" style="margin-top: 12px; text-align: center">
-              <button class="cta" style="width: 100%" [disabled]="!cart().length" (click)="abrirCobro()">💾 Guardar venta</button>
-              <p class="link" style="margin: 12px 0 0" (click)="promos.set(true)">🏷 Promociones</p>
-              <p class="link" style="margin: 6px 0 0" (click)="atajos.set(true)">⌨ Atajos</p>
+              <button class="cta" style="width: 100%" [disabled]="!cart().length" (click)="abrirCobro()"><i class="fa-regular fa-floppy-disk"></i>Guardar venta</button>
+              <p class="link" style="margin: 12px 0 0" (click)="promos.set(true)"><i class="fa-solid fa-tag" style="margin-right: 6px"></i>Promociones</p>
+              <p class="link" style="margin: 6px 0 0" (click)="atajos.set(true)"><i class="fa-regular fa-keyboard" style="margin-right: 6px"></i>Atajos</p>
             </div>
             @if (store.settings().arqueo && store.openSession(); as s) {
               <div class="card" style="margin-top: 12px; text-align: center">
@@ -75,9 +85,9 @@ interface CartLine { productId: string; name: string; qty: number; price: number
               </div>
             } @else {
               <div class="card">
-                <div class="row" style="justify-content: space-between"><b>Resumen de la venta</b><span class="badge b-blue">{{ cart().length }} {{ cart().length === 1 ? 'producto' : 'productos' }}</span></div>
+                @if (cart().length) { <div class="row" style="justify-content: space-between"><b>Resumen de la venta</b><span class="badge b-blue">{{ cart().length }} {{ cart().length === 1 ? 'producto' : 'productos' }}</span></div> }
                 @if (!cart().length) {
-                  <div class="empty"><div style="font-size: 36px">🛒</div><b>Nueva venta</b><br />Buscá un producto por nombre o escaneá su código para empezar a cargar la venta</div>
+                  <div class="empty cart-empty"><div class="cart-ic"><i class="fa-solid fa-cart-shopping"></i></div><b>Nueva venta</b><br />Buscá un producto por nombre o escaneá<br />su código para empezar a cargar la venta</div>
                 } @else {
                   <table style="background: none; margin-top: 8px">
                     <tr><th>Cantidad</th><th>Producto</th><th class="right">Precio</th><th class="right">Subtotal</th><th></th></tr>
@@ -95,7 +105,7 @@ interface CartLine { productId: string; name: string; qty: number; price: number
                   <div class="right"><small class="muted">TOTAL</small><br /><strong style="font-size: 30px">{{ subtotal() | money }}</strong></div>
                 }
               </div>
-              @if (store.settings().createProductFromCash) { <p><button (click)="rapidoOpen()">+ Crear producto</button></p> }
+              @if (store.settings().createProductFromCash) { <p><button class="pillbtn" style="height: 32px" (click)="rapidoOpen()"><i class="fa-solid fa-plus"></i>Crear producto</button></p> }
             }
           </div>
         </div>
@@ -220,6 +230,7 @@ interface CartLine { productId: string; name: string; qty: number; price: number
 })
 export class CajaComponent implements OnInit, AfterViewInit {
   readonly store = inject(Store);
+  readonly auth = inject(Auth);
   private readonly api = inject(Api);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);

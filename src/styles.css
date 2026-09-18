@@ -297,3 +297,15 @@ th.c,td.c{text-align:center;width:64px}
 .mov{display:inline-flex;align-items:center;gap:5px;border-radius:99px;padding:2px 12px;font-size:12px;font-weight:800}
 .mov i{font-size:11px;margin:0}.mov.up{background:rgba(31,157,99,.16);color:#1b7f4f}.mov.down{background:rgba(209,70,90,.14);color:#c23a52}
 .img-ph.sm{width:34px;height:34px;border-radius:8px;font-size:13px;vertical-align:middle}
+
+/* ===== caja registradora ===== */
+.cash{position:relative;z-index:1}
+.cash-bar{margin:0 0 6px;padding:0 20px;height:66px}
+.cash-bar .biz-logo{width:50px;height:50px}
+.hamb{width:34px;height:34px;display:grid;place-items:center;color:var(--text);text-decoration:none;font-size:15px}
+.search-wrap{position:relative}
+.search-wrap .bc{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:32px;height:32px;padding:0;border:0;background:transparent;color:#555;display:grid;place-items:center}
+.search-wrap .bc i{margin:0;font-size:15px}
+.cart-empty{padding:44px 16px;text-align:center}
+.cart-ic{width:54px;height:54px;border-radius:50%;background:rgba(5,133,254,.14);color:#0585fe;display:grid;place-items:center;margin:0 auto 12px;font-size:20px}
+.cart-empty b{font-size:15px}
