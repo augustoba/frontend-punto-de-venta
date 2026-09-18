@@ -1,6 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { Api } from '../core/api';
 import { Store } from '../core/store';
+import { Auth } from '../core/auth';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { NAV } from '../nav';
 
@@ -23,8 +24,9 @@ import { NAV } from '../nav';
         <div class="topbar">
           <b>Mi negocio</b>
           <span [title]="api.online() ? 'Conectado a la API' : 'Sin conexión con la API: se usan los datos locales'">
-            {{ api.online() ? '🟢 API' : api.online() === false ? '🟠 Local' : '…' }} &nbsp; Usuario
+            {{ api.online() ? '🟢 API' : api.online() === false ? '🟠 Local' : '…' }} &nbsp; {{ auth.session()?.username ?? 'Usuario' }}
           </span>
+          @if (auth.session()) { <button (click)="auth.logout()" style="margin-left:12px">Salir</button> }
         </div>
         @if (store.error()) {
           <div class="alert" style="margin:10px 20px;padding:10px 14px;border-radius:10px;background:#fde8e8;color:#8a1c1c">
@@ -40,4 +42,5 @@ export class ShellComponent {
   readonly nav = NAV;
   readonly api = inject(Api);
   readonly store = inject(Store);
+  readonly auth = inject(Auth);
 }

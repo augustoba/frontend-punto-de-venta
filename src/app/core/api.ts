@@ -21,7 +21,7 @@ export class Api {
   /** Consulta liviana para saber si el backend está arriba. */
   async ping(): Promise<boolean> {
     try { await this.get('/api/settings'); this.online.set(true); return true; }
-    catch { this.online.set(false); return false; }
+    catch (e: any) { const up = e?.status === 401; this.online.set(up); return up; }   // 401 = el servidor respondió
   }
 
   // Tesorería

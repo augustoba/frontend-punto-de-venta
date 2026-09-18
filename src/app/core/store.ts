@@ -96,6 +96,8 @@ export class Store {
   }
 
   /** Modo servidor: activo por defecto si la API responde; se apaga con `localStorage['pos-use-api']='0'`. */
+  setUser(name: string): void { this.db.update((d) => ({ ...d, user: name })); }
+
   async connect(): Promise<void> {
     let wanted = true;
     try { wanted = localStorage.getItem('pos-use-api') !== '0'; } catch { /* sin storage */ }

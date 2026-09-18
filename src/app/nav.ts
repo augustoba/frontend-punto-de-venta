@@ -49,6 +49,7 @@ export const NAV: NavGroup[] = [
     items: [
       { label: 'Empleados', path: 'empleados', subtitle: 'Controlá el equipo de cada sucursal, sus permisos y las horas trabajadas.' },
       { label: 'Horas trabajadas', path: 'horas', subtitle: 'Controlá las horas que trabaja cada empleado.' },
+      { label: 'Accesos', path: 'accesos', subtitle: 'Tu contraseña y los usuarios que pueden ingresar.' },
     ],
   },
   {
