@@ -4,6 +4,7 @@ import { filter } from 'rxjs';
 import { Api } from '../core/api';
 import { Auth } from '../core/auth';
 import { Store } from '../core/store';
+import { Onboarding } from '../core/onboarding';
 import { NAV, NavItem } from '../nav';
 
 /** Un renglón del menú: un ítem suelto o un grupo desplegable (Historial, Empleados, Listas y catálogos). */
@@ -49,6 +50,9 @@ function leerColapsado(): boolean { try { return localStorage.getItem(KEY_COLAPS
             @else { <a class="biz-logo empty" routerLink="/ajustes" title="Subí tu logo en Ajustes">TU<br />LOGO</a> }
             <b>{{ store.settings().businessName || 'Mi negocio' }}</b>
           </div>
+          @if (ob.porcentaje() < 100) {
+            <a class="cfg-pill" routerLink="/primeros-pasos" title="Terminá de configurar tu negocio"><i class="fa-solid fa-rocket"></i>Configuración {{ ob.porcentaje() }}%<span class="cfg-bar"><i [style.width.%]="ob.porcentaje()"></i></span><i class="fa-solid fa-arrow-right"></i></a>
+          }
           <div class="who">
             <span [title]="api.online() ? 'Conectado a la API' : 'Sin conexión con la API: se usan los datos locales'" style="font-size:12px;font-weight:700;color:var(--text-soft)">
               <i class="fa-solid fa-circle" [style.color]="api.online() ? '#2aa66a' : api.online() === false ? '#e08a1e' : '#aaa'" style="font-size:8px;margin-right:5px"></i>{{ api.online() ? 'API' : api.online() === false ? 'Local' : '…' }}
@@ -67,6 +71,7 @@ function leerColapsado(): boolean { try { return localStorage.getItem(KEY_COLAPS
         <router-outlet />
       </div>
     </div>
+    <a class="ayuda-fab" routerLink="/primeros-pasos" title="Ayuda: primeros pasos" aria-label="Ayuda"><i class="fa-solid fa-life-ring"></i></a>
     <footer class="foot"><span>{{ anio }} © Todos los derechos reservados</span><span>·</span><span>{{ store.settings().businessName || 'Punto de venta' }}</span></footer>
   `,
 })
@@ -74,6 +79,7 @@ export class ShellComponent {
   readonly api = inject(Api);
   readonly store = inject(Store);
   readonly auth = inject(Auth);
+  readonly ob = inject(Onboarding);
   private readonly router = inject(Router);
   readonly anio = new Date().getFullYear();
 

@@ -1,6 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
+import { EmptyGuideComponent } from '../../shared/empty-guide.component';
 import { ModalComponent } from '../../shared/modal.component';
 import { FdatePipe, MoneyPipe, FtimePipe, AvcolorPipe } from '../../shared/format';
 import { Store, r2 } from '../../core/store';
@@ -31,7 +32,7 @@ const CHIP: Record<string, [string, string]> = {
 /** Clientes y proveedores con cuenta corriente (réplica de Envi). Ver referencia-envi/ANALISIS_cuentas_corrientes.md */
 @Component({
   selector: 'app-partes',
-  imports: [FormsModule, ModalComponent, MoneyPipe, FdatePipe, FtimePipe, AvcolorPipe],
+  imports: [FormsModule, ModalComponent, MoneyPipe, FdatePipe, FtimePipe, AvcolorPipe, EmptyGuideComponent],
   template: `
     @if (!sel()) {
       <h1>{{ es() ? 'Clientes' : 'Proveedores' }}</h1>
@@ -63,7 +64,7 @@ const CHIP: Record<string, [string, string]> = {
               <button class="round" (click)="$event.stopPropagation(); mov(p.id)" title="Registrar movimiento"><i class="fa-solid fa-right-left"></i></button></td>
             <td class="right"><i class="fa-solid fa-ellipsis-vertical" style="margin: 0; color: var(--text-soft)"></i></td>
           </tr>
-        } @empty { <tr><td [attr.colspan]="es() ? 4 : 6" class="empty">Todavía no hay {{ es() ? 'clientes' : 'proveedores' }}.</td></tr> }
+        } @empty { <tr><td [attr.colspan]="es() ? 4 : 6" class="empty">@if (!lista().length) { <app-empty-guide [icon]="es() ? 'user-group' : 'truck'" [titulo]="es() ? 'Cargá tu primer cliente' : 'Cargá tu primer proveedor'" [texto]="es() ? 'Con clientes podés llevar su cuenta corriente y sus compras.' : 'Con proveedores registrás compras, deudas y pagos.'" [cta]="es() ? 'Nuevo cliente' : 'Crear proveedor'" (accion)="nuevo()" /> } @else { No hay resultados para la búsqueda. }</td></tr> }
       </table>
       <div class="pager"><span>Mostrando {{ filtrada().length ? '1–' + filtrada().length : 0 }} de {{ lista().length }}</span></div>
     } @else {

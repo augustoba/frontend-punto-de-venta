@@ -6,6 +6,7 @@ import { authGuard } from './core/auth';
 
 /** Pantallas ya construidas (el resto usa PlaceholderComponent). */
 const BUILT: Record<string, () => Promise<any>> = {
+  'primeros-pasos': () => import('./pages/primeros-pasos/primeros-pasos.component').then((m) => m.PrimerosPasosComponent),
   dashboard: () => import('./pages/dashboard/dashboard.component').then((m) => m.DashboardComponent),
   ventas: () => import('./pages/ventas/ventas.component').then((m) => m.VentasComponent),
   stock: () => import('./pages/stock/stock.component').then((m) => m.StockComponent),

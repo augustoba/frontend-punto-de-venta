@@ -2,6 +2,7 @@ import { AfterViewInit, Component, ElementRef, HostListener, OnInit, ViewChild, 
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ModalComponent } from '../../shared/modal.component';
+import { TourComponent, TourStep } from '../../shared/tour.component';
 import { CamaraScannerComponent } from '../../shared/camara-scanner.component';
 import { ScanBuffer, beep } from '../../core/scanner';
 import { MoneyPipe } from '../../shared/format';
@@ -15,7 +16,7 @@ interface CartLine { productId: string; name: string; qty: number; price: number
 /** Caja registradora (réplica de Envi /cash-register): buscador, carrito, descuentos, cobro y arqueo de caja. */
 @Component({
   selector: 'app-caja',
-  imports: [FormsModule, RouterLink, ModalComponent, MoneyPipe, CamaraScannerComponent],
+  imports: [FormsModule, RouterLink, ModalComponent, MoneyPipe, CamaraScannerComponent, TourComponent],
   template: `
     <div class="animated-bg" aria-hidden="true"><i></i><i></i><i></i></div>
     <div class="cash">
@@ -45,19 +46,19 @@ interface CartLine { productId: string; name: string; qty: number; price: number
             <div class="card">
               <b>Agregar producto</b>
               <div class="field" style="margin-top: 10px"><label>Buscar</label>
-                <div class="search-wrap"><input #buscador class="search" placeholder="Nombre o código" [ngModel]="q()" (ngModelChange)="q.set($event)" (keydown.enter)="enter()" (keydown.escape)="q.set('')" style="width: 100%" />
+                <div class="search-wrap" data-tour="buscar"><input #buscador class="search" placeholder="Nombre o código" [ngModel]="q()" (ngModelChange)="q.set($event)" (keydown.enter)="enter()" (keydown.escape)="q.set('')" style="width: 100%" />
                   <button class="bc" (click)="camara.set(true)" title="Escanear código de barras con la cámara"><i class="fa-solid fa-barcode"></i></button></div></div>
               @if (aviso() && !camara()) { <p class="sub" style="margin: 8px 0 0" [style.color]="avisoOk() ? '#1f7a4d' : '#8a1c1c'">{{ aviso() }}</p> }
             </div>
-            <div class="card" style="margin-top: 12px"><div class="field"><label>Lista de precios</label>
+            <div class="card" style="margin-top: 12px" data-tour="lista"><div class="field"><label>Lista de precios</label>
               <select [ngModel]="listaId()" (ngModelChange)="elegirLista($event)" style="width: 100%">
                 @for (l of listas(); track l.id) { <option [ngValue]="l.id">{{ l.name }}{{ l.main ? '' : ' (' + (l.percent > 0 ? '+' : '') + l.percent + '%)' }}</option> }
                 @if (!listas().length) { <option [ngValue]="null">Principal</option> }
               </select></div></div>
-            <div class="card" style="margin-top: 12px; text-align: center">
+            <div class="card" style="margin-top: 12px; text-align: center" data-tour="guardar">
               <button class="cta" style="width: 100%" [disabled]="!cart().length" (click)="abrirCobro()"><i class="fa-regular fa-floppy-disk"></i>Guardar venta</button>
-              <p class="link" style="margin: 12px 0 0" (click)="promos.set(true)"><i class="fa-solid fa-tag" style="margin-right: 6px"></i>Promociones</p>
-              <p class="link" style="margin: 6px 0 0" (click)="atajos.set(true)"><i class="fa-regular fa-keyboard" style="margin-right: 6px"></i>Atajos</p>
+              <p class="link" data-tour="promos" style="margin: 12px 0 0" (click)="promos.set(true)"><i class="fa-solid fa-tag" style="margin-right: 6px"></i>Promociones</p>
+              <p class="link" data-tour="atajos" style="margin: 6px 0 0" (click)="atajos.set(true)"><i class="fa-regular fa-keyboard" style="margin-right: 6px"></i>Atajos</p>
             </div>
             @if (store.settings().arqueo && store.openSession(); as s) {
               <div class="card" style="margin-top: 12px; text-align: center">
@@ -174,6 +175,8 @@ interface CartLine { productId: string; name: string; qty: number; price: number
         <div class="mf"><button (click)="lineaDesc.set(null)">Cancelar</button><button class="cta" (click)="aplicarLinea()">Aceptar</button></div>
       </app-modal>
     }
+    <button class="ayuda-fab" style="border: 0" (click)="iniciarTour()" title="Recorrido guiado de la caja" aria-label="Ayuda"><i class="fa-solid fa-circle-question"></i></button>
+    @if (tour()) { <app-tour [steps]="pasosTour" (closed)="cerrarTour()" /> }
     @if (camara()) { <app-camara-scanner [mensaje]="aviso()" (codigo)="porCodigo($event)" (closed)="camara.set(false)" /> }
     @if (rapido(); as r) {
       <app-modal title="Nuevo producto" [width]="420" (closed)="rapido.set(null)">
@@ -273,7 +276,24 @@ export class CajaComponent implements OnInit, AfterViewInit {
     return this.store.db().products.filter((p) => !p.archived && (p.name.toLowerCase().includes(q) || p.barcode === q) && (!this.soloStock() || this.store.stockOf(p) > 0));
   });
 
+  readonly tour = signal(false);
+  readonly pasosTour: TourStep[] = [
+    { titulo: 'Caja registradora', texto: 'Tu centro de ventas. Te mostramos las funciones principales en 9 pasos rápidos.' },
+    { titulo: 'Buscá o escaneá', texto: 'Escribí el nombre o el código del producto y tocá Enter para agregarlo. Con un lector de mano alcanza con escanear.', selector: '[data-tour=buscar]' },
+    { titulo: 'Código de barras con la cámara', texto: 'Tocá el ícono para leer el código con la cámara del celular o la notebook.', selector: '.search-wrap .bc' },
+    { titulo: 'Lista de precios', texto: 'Elegí con qué lista se cobra la venta (por ejemplo Mayorista). El carrito se actualiza solo.', selector: '[data-tour=lista]' },
+    { titulo: 'El carrito', texto: 'Acá ves lo que vas cargando: cantidades con − / +, descuentos por producto y el total.', selector: '.cash-grid > div:nth-child(2)' },
+    { titulo: 'Guardar la venta', texto: 'Cuando el carrito está listo, guardá: elegís cliente, medio de pago, descuento y si emitís factura.', selector: '[data-tour=guardar]' },
+    { titulo: 'Promociones', texto: 'Mirá las promociones y combos vigentes para ofrecerlos en el mostrador.', selector: '[data-tour=promos]' },
+    { titulo: 'Atajos de teclado', texto: 'Alt+F busca, Alt+S guarda, Alt+M promociones y más. Trabajás sin soltar el teclado.', selector: '[data-tour=atajos]' },
+    { titulo: 'Listo para vender', texto: 'Ya conocés lo esencial. Probá hacer tu primera venta. Podés volver a ver este recorrido con el botón «?».' },
+  ];
+  iniciarTour() { this.tour.set(true); }
+  cerrarTour() { this.tour.set(false); try { localStorage.setItem('pos-tour-caja-visto', '1'); } catch { /* sin storage */ } }
+  private tourPendiente(): boolean { try { return localStorage.getItem('pos-tour-caja-visto') !== '1'; } catch { return false; } }
+
   ngOnInit(): void {
+    if (this.tourPendiente()) setTimeout(() => { if (this.store.canSell()) this.tour.set(true); }, 1200);   // con la caja cerrada no hay nada que mostrar
     this.cargarListas();
     const b = this.route.snapshot.queryParamMap.get('presupuesto');
     const bud = b ? this.store.db().budgets.find((x) => x.id === b) : undefined;

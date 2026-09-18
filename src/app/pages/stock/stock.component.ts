@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { Api } from '../../core/api';
 import { CamaraScannerComponent } from '../../shared/camara-scanner.component';
 import { ScanBuffer, beep } from '../../core/scanner';
+import { EmptyGuideComponent } from '../../shared/empty-guide.component';
 import { ListasPreciosComponent } from './listas-precios.component';
 import { ModalComponent } from '../../shared/modal.component';
 import { MoneyPipe } from '../../shared/format';
@@ -15,7 +16,7 @@ type StockFilter = '' | 'ideal' | 'critico' | 'sin';
 /** Stock / Productos (réplica de Envi /products). Ver referencia-envi/ANALISIS_stock.md */
 @Component({
   selector: 'app-stock',
-  imports: [FormsModule, ModalComponent, MoneyPipe, RouterLink, ListasPreciosComponent, CamaraScannerComponent],
+  imports: [FormsModule, ModalComponent, MoneyPipe, RouterLink, ListasPreciosComponent, CamaraScannerComponent, EmptyGuideComponent],
   template: `
     <h1>Stock</h1>
     <p class="sub">Cargá productos, gestioná stock y actualizá precios.</p>
@@ -119,7 +120,7 @@ type StockFilter = '' | 'ideal' | 'critico' | 'sin';
           </td>
         </tr>
       } @empty {
-        <tr><td colspan="9" class="empty">No hay productos. Creá el primero con «Nuevo producto».</td></tr>
+        <tr><td colspan="9" class="empty">@if (!store.db().products.length) { <app-empty-guide icon="box-open" titulo="Agregá tu primer producto" texto="Crealo manualmente en pocos pasos o cargá varios de una vez con la carga masiva." cta="Crear producto" (accion)="openNew()" cta2="Carga masiva" (accion2)="bulkImport.set(true)" /> } @else { No hay productos que coincidan con los filtros. }</td></tr>
       }
     </table>
     <div class="pager"><span>Mostrando {{ filtrados().length }} de {{ store.db().products.length }}</span></div>

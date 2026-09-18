@@ -92,3 +92,4 @@ Ya construido en esta tanda: Servicios (sin stock), fotos de producto, lector de
 
 Ver también el análisis de la segunda referencia (Ventario): `backend-punto-de-venta/referencia-ventario/ANALISIS_COMPARATIVO.md` (Dashboard, Primeros pasos, devoluciones, auditoría de stock, reportes de reposición, etc.).
 - **F20** (2026-09-18): Dashboard (mejora #1 de `docs/MEJORAS.md`): pantalla de inicio con resumen del negocio. Ver el tablero de mejoras para el seguimiento.
+- **F21** (2026-09-18): Primeros pasos, píldora de progreso, ayuda y recorrido guiado de la caja (mejora #2 de `docs/MEJORAS.md`).

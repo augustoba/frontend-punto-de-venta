@@ -1,6 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { EmptyGuideComponent } from '../../shared/empty-guide.component';
 import { ModalComponent } from '../../shared/modal.component';
 import { AvcolorPipe, FdatePipe, FtimePipe, MoneyPipe, fdate } from '../../shared/format';
 import { Store } from '../../core/store';
@@ -9,7 +10,7 @@ import { Sale } from '../../core/models';
 /** Ventas (réplica de Envi /sales): KPIs del día, filtros, tabla, detalle y anulación. */
 @Component({
   selector: 'app-ventas',
-  imports: [FormsModule, RouterLink, ModalComponent, MoneyPipe, FdatePipe, FtimePipe, AvcolorPipe],
+  imports: [FormsModule, RouterLink, ModalComponent, MoneyPipe, FdatePipe, FtimePipe, AvcolorPipe, EmptyGuideComponent],
   template: `
     <h1>Ventas</h1>
     <p class="sub">Creá, editá y monitoreá las ventas de tu negocio.</p>
@@ -55,7 +56,7 @@ import { Sale } from '../../core/models';
             @if (menu() === v.id) { <div class="pop"><button (click)="detalle.set(v); menu.set('')">Ver detalle</button><button (click)="facturar(v); menu.set('')">Generar factura</button><button class="danger" (click)="anular(v); menu.set('')">Eliminar</button></div> }</div></td>
         </tr>
       } @empty {
-        <tr><td colspan="7" class="empty">Todavía no hay ventas. Registrá la primera con «Nueva venta».</td></tr>
+        <tr><td colspan="7" class="empty">@if (!store.db().sales.length) { <app-empty-guide icon="cart-shopping" titulo="Hacé tu primera venta" texto="Abrí la caja registradora, cargá productos y cobrá. Tus ventas van a aparecer acá." cta="Ir a la caja" link="/caja" /> } @else { No hay ventas que coincidan con los filtros. }</td></tr>
       }
     </table>
     <div class="pager"><span>Mostrando {{ filtradas().length }} de {{ store.db().sales.length }}</span></div>

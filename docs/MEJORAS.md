@@ -7,7 +7,7 @@ Estados: ⬜ pendiente · 🔄 en curso · ✅ hecho · ⏸ diferido a propósit
 | # | Mejora | Estado | Fecha | Notas |
 |---|---|---|---|---|
 | 1 | **Dashboard** (tarjetas, análisis financiero, top días/productos, ventas por hora, alertas) | ✅ | 2026-09-18 | `/dashboard` es ahora la pantalla de inicio. 4 tarjetas de color, análisis diario (barras/línea) con selector de mes, resumen financiero (bruta, egresos, neta, tendencia), gastos, top 5 días, ventas por hora, top productos, márgenes bajos, cuentas corrientes, caja, proveedores, stock bajo y últimos movimientos. 3 pruebas. |
-| 2 | **Primeros pasos** + píldora de progreso + recorrido guiado del POS + estados vacíos que guían | ⬜ | | |
+| 2 | **Primeros pasos** + píldora de progreso + recorrido guiado del POS + estados vacíos que guían | ✅ | 2026-09-18 | `/primeros-pasos` (2 esenciales + 3 recomendados, con avance real calculado de los datos), píldora «Configuración N %» en el encabezado (se oculta al 100 %), botón de ayuda flotante, recorrido de 9 pasos en la caja (arranca solo la primera vez si se puede vender; botón «?» para repetirlo) y estados vacíos con botón de acción en Stock, Ventas, Clientes y Proveedores. 3 pruebas. |
 | 3 | **POS**: chips de categoría y grilla con foto, Recargo, atajos F1/F4/F6/F7/F8, indicador de escáner, accesos rápidos | ⬜ | | |
 | 4 | **Devoluciones / cambios** (stock y dinero) y notas de crédito de prueba | ⬜ | | |
 | 5 | **Control de stock con motivos** (baja, consumo interno, ajuste manual) + reporte de pérdidas | ⬜ | | |
@@ -35,3 +35,4 @@ Estados: ⬜ pendiente · 🔄 en curso · ✅ hecho · ⏸ diferido a propósit
 ## Bitácora
 - 2026-09-18: creado este tablero. Se empieza por la prioridad 1, en orden.
 - 2026-09-18: ✅ #1 Dashboard. Siguiente: #2 Primeros pasos.
+- 2026-09-18: ✅ #2 Primeros pasos, recorrido del POS y estados vacíos. Siguiente: #3 mejoras del POS.

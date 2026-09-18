@@ -17,6 +17,7 @@ export const NAV: NavGroup[] = [
   {
     title: 'Inicio',
     items: [
+      { label: 'Primeros pasos', path: 'primeros-pasos', subtitle: 'Preparé lo esencial a tu ritmo.', icon: 'rocket' },
       { label: 'Dashboard', path: 'dashboard', subtitle: 'Resumen de tu negocio.', icon: 'gauge-high' },
     ],
   },
