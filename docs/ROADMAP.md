@@ -75,3 +75,17 @@ npm start        # http://localhost:4200
 - **F17 (lote 15)**: Caja registradora como Envi: barra superior con menú, logo y nombre del negocio, campana y usuario; ícono de código de barras dentro del buscador (abre la cámara); selector de lista de precios siempre visible; estado vacío con ícono circular; botones con ícono. **Revisión pendiente** (no comparé pixel por pixel): las pestañas Tesorería/Stock/Productos/Clientes/Rentabilidad de Reportes, «Ajustes de stock», los modales (detalle de venta/producto, cobro, apertura y cierre de caja) y los formularios de alta.
 - **F18** (2026-09-18): logo genérico propio (bolsa de compras, `favicon.svg` y marca del menú; sin nada de Envi). Reportes: Tesorería con donas y leyenda, Stock con «Stock consolidado» (Cantidad / Precio de venta / Precio de costo) y evolución de entradas/salidas, Productos con período, indicadores y «Ordenar por». **Código de barras del producto**: en el alta/edición se puede escribir a mano, leer con lector de mano (el Enter del lector ya no cierra el formulario) o escanear con la cámara; avisa si el código ya lo tiene otro producto; el alta rápida de la caja también acepta código. Arreglos en Stock: el botón de administrar listas de precios estaba montado dentro del formulario de producto y no abría nada; «Imprimir» ahora saca sólo el listado de productos (con la lista de precios elegida) y no la pantalla entera.
 - **F19** (2026-09-18): **Servicios** (ya no es «Próximamente»): con el interruptor activo, Stock muestra las solapas Productos / Servicios; en el alta hay «Es un servicio (no lleva stock)», que oculta los campos de stock; un servicio se vende sin descontar ni generar movimientos (backend y modo local). Verificado contra la API: venta de 2 unidades por $6.000, stock 0 y 0 movimientos de stock. 1 prueba nueva en el front (34).
+
+## Cambios posibles (NO se hacen ahora)
+Funciones que Envi tiene y que en Ajustes figuran como «Próximamente». Quedan anotadas como posibles cambios futuros; no están planificadas.
+
+| Función | Qué implicaría | Peso |
+|---|---|---|
+| **Envíos en la caja** | Datos de envío (dirección, costo, notas) al crear la venta; el costo suma al total; se ve en el detalle y en el ticket. Campos nuevos en la venta (backend y front). | Mediano |
+| **Conciliación bancaria** | Importar el extracto del banco (CSV), cruzarlo con los movimientos de la cuenta por fecha e importe, marcar lo conciliado y mostrar las diferencias. Campo «conciliado» en el movimiento y pantalla en Cuentas y saldos. | Mediano |
+| **Venta por peso** | Cantidades decimales (kg): hoy el stock y las líneas de venta son enteros. Toca stock, libro de stock, ventas, compras, combos e impresión. | Grande |
+| **Múltiples monedas** | Listas de precios en otra moneda con cotización, y decidir en qué moneda se cobra y se registra en cuentas. Hoy todo es una sola moneda. | Grande |
+| **Trazabilidad por lote** | Lotes, vencimientos, producción y reporte de recall. | Grande |
+| **Facturación fiscal real (ARCA)** | Integración con el emisor fiscal; hoy sólo hay facturas de prueba. | Grande |
+
+Ya construido en esta tanda: Servicios (sin stock), fotos de producto, lector de mano y cámara para códigos de barras, listas de precios, depósitos y transferencias.
