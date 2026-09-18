@@ -34,6 +34,10 @@ export const REMOTE_OPS: Record<string, Op> = {
     const subs = db.categories.find((c) => c.id === catId)!.subs.map((s) => s.name);
     return put(api, `/api/categories/${catId}`, categoryBody(db, catId, { subs: [...subs, name] }));
   },
+  renameSubcategory: (api, db, catId: string, id: string, name: string) => {
+    const subs = db.categories.find((c) => c.id === catId)!.subs.map((s) => (s.id === id ? name : s.name));
+    return put(api, `/api/categories/${catId}`, categoryBody(db, catId, { subs }));
+  },
   deleteSubcategory: (api, db, catId: string, id: string) => {
     const subs = db.categories.find((c) => c.id === catId)!.subs.filter((s) => s.id !== id).map((s) => s.name);
     return put(api, `/api/categories/${catId}`, categoryBody(db, catId, { subs }));

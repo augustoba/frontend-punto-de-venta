@@ -426,6 +426,7 @@ export class Store {
     });
   }
   deleteCategory(id: string): void { this.mut((d) => { d.categories = d.categories.filter((c) => c.id !== id); }); }
+  renameSubcategory(catId: string, id: string, name: string): void { this.mut((d) => { const s = d.categories.find((c) => c.id === catId)?.subs.find((x) => x.id === id); if (s) s.name = name; }); }
   addSubcategory(catId: string, name: string): void { this.mut((d) => { d.categories.find((c) => c.id === catId)?.subs.push({ id: this.newId(d, 'sub'), name }); }); }
   deleteSubcategory(catId: string, id: string): void { this.mut((d) => { const c = d.categories.find((x) => x.id === catId); if (c) c.subs = c.subs.filter((s) => s.id !== id); }); }
   addEmployee(e: Omit<Employee, 'id'>): void { this.mut((d) => { d.employees.push({ id: this.newId(d, 'em'), ...e }); }); }

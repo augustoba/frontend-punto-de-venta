@@ -40,9 +40,27 @@ import { Store } from '../../core/store';
       <div class="toolbar"><input class="search" placeholder="Buscar..." [ngModel]="q()" (ngModelChange)="q.set($event)" /><span class="sp"></span>
         <button class="iconbtn" (click)="refrescar()" title="Actualizar"><i class="fa-solid fa-rotate-right"></i></button>
         <button class="cta" (click)="entrada()"><i class="fa-solid fa-plus"></i>Nueva entrada / salida</button></div>
-      <table><tr><th>Fecha</th><th>Empleado</th><th>Entrada</th><th>Salida</th><th>Horas</th><th>Notas</th></tr>
-        @for (s of turnos(); track s.id) { <tr><td>{{ s.date }}</td><td>{{ nombre(s.employeeId) }}</td><td>{{ s.from }}</td><td>{{ s.to }}</td><td>{{ dur(s.from, s.to) }} h</td><td>{{ s.notes }}</td></tr> }
-        @empty { <tr><td colspan="6" class="empty">Todavía no cargaste horarios.</td></tr> }</table>
+      @if (turnos().length) {
+        <table><tr><th>Fecha</th><th>Empleado</th><th>Entrada</th><th>Salida</th><th>Horas</th><th>Notas</th></tr>
+          @for (s of turnos(); track s.id) { <tr><td><b>{{ s.date }}</b></td><td><span class="av" [style.background]="nombre(s.employeeId) | avcolor">{{ nombre(s.employeeId)[0] }}</span>{{ nombre(s.employeeId) }}</td><td>{{ s.from }}</td><td>{{ s.to }}</td><td><b>{{ dur(s.from, s.to) }} h</b></td><td>{{ s.notes }}</td></tr> }</table>
+      } @else {
+        <div class="empty-hero">
+          <div class="hero-card">
+            <svg viewBox="0 0 520 300" role="img" aria-label="Horarios">
+              <path d="M70 150c-30-60 10-120 80-110s110-30 170 0 150 20 150 100-40 110-120 120-130 40-190 0S100 210 70 150z" fill="#17a9cf"/>
+              <ellipse cx="60" cy="150" rx="34" ry="62" fill="#17a9cf" opacity=".9"/><ellipse cx="455" cy="230" rx="22" ry="34" fill="#17a9cf" opacity=".85"/>
+              <text x="265" y="95" text-anchor="middle" font-family="Montserrat, sans-serif" font-weight="800" font-size="40" fill="#1b1b2f">HORARIOS</text>
+              <circle cx="345" cy="175" r="70" fill="#f6efe6" stroke="#2b2b45" stroke-width="10"/>
+              <g stroke="#2b2b45" stroke-width="5" stroke-linecap="round"><path d="M345 175V130M345 175l30 18"/></g>
+              <g fill="#2b2b45"><circle cx="345" cy="115" r="3"/><circle cx="345" cy="235" r="3"/><circle cx="285" cy="175" r="3"/><circle cx="405" cy="175" r="3"/></g>
+              <rect x="150" y="205" width="160" height="70" rx="10" fill="#fff"/><circle cx="210" cy="180" r="30" fill="#f2d3b3"/><path d="M180 178c0-30 60-30 60 0v25h-60z" fill="#2b2b45"/>
+              <rect x="395" y="225" width="70" height="55" rx="6" fill="#fff" stroke="#2b2b45" stroke-width="4"/>
+            </svg>
+            <p><b>Llevá el registro de horas trabajadas</b><br /><small class="muted">De este modo podés usar nuestra liquidación de sueldos automática</small></p>
+          </div>
+          <button class="cta" (click)="entrada()"><i class="fa-solid fa-plus"></i>Nueva entrada / salida</button>
+        </div>
+      }
     }
 
     @if (form(); as f) {

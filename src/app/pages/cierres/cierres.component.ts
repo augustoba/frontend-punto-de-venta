@@ -1,29 +1,30 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ModalComponent } from '../../shared/modal.component';
-import { FdatePipe, FtimePipe, MoneyPipe } from '../../shared/format';
+import { FdatePipe, FtimePipe, MoneyPipe, AvcolorPipe } from '../../shared/format';
 import { Store, r2 } from '../../core/store';
 import { CashSession } from '../../core/models';
 
 /** Cierres de caja (réplica de Envi): turnos, diferencias por empleado, verificación. Ver ANALISIS_caja.md */
 @Component({
   selector: 'app-cierres',
-  imports: [FormsModule, ModalComponent, MoneyPipe, FdatePipe, FtimePipe],
+  imports: [FormsModule, ModalComponent, MoneyPipe, FdatePipe, FtimePipe, AvcolorPipe],
   template: `
     <h1>Cierres de caja</h1>
     <p class="sub">Consultá los cierres de caja de cada turno.</p>
-    <div class="toolbar"><input class="search" placeholder="Buscar..." style="width: 240px" [ngModel]="q()" (ngModelChange)="q.set($event)" /><span class="sp"></span>
-      <button (click)="difs.set(true)">≡ Diferencias por empleado</button>
-      <span class="link" (click)="alertaOpen.set(true)">🔔 Configurar alerta de diferencia</span></div>
+    <div class="toolbar"><input class="search" placeholder="Buscar..." [ngModel]="q()" (ngModelChange)="q.set($event)" /><button><i class="fa-solid fa-filter"></i>Filtrar</button><span class="sp"></span>
+      <button class="iconbtn" (click)="refrescar()" title="Actualizar"><i class="fa-solid fa-rotate-right"></i></button>
+      <button (click)="difs.set(true)"><i class="fa-solid fa-bars-staggered"></i>Diferencias por empleado</button>
+      <span class="link" style="font-size: 13px" (click)="alertaOpen.set(true)"><i class="fa-solid fa-bell" style="margin: 0 6px 0 0"></i>Configurar alerta de diferencia</span></div>
     @if (!store.settings().arqueo) { <p class="note info">El arqueo de caja está desactivado. Activalo en Ajustes › Ventas y caja para abrir y cerrar la caja en cada turno.</p> }
     <table>
       <tr><th>Caja / turno</th><th>Apertura de caja</th><th>Cierre de caja</th><th>Comentarios</th></tr>
       @for (s of lista(); track s.id) {
         <tr>
-          <td><b>{{ store.account(s.accountId)?.name }}</b><br /><span class="av">{{ s.user[0] }}</span>{{ s.user }}<br />{{ s.openedAt | fdate }}<br /><button style="height: 28px; margin-top: 4px" (click)="ver.set(s)">≡ Ver movimientos</button></td>
-          <td>Hora {{ s.openedAt | fdate }} {{ s.openedAt | ftime }}<br />Saldo {{ s.openingBalance | money }}</td>
-          <td>@if (s.closedAt) { Hora {{ s.closedAt | fdate }} {{ s.closedAt | ftime }}<br />Saldo {{ s.real | money }}
-                @if (s.diff) { <br />Diferencia: <b [class]="s.diff > 0 ? 'pos' : 'neg'">{{ s.diff > 0 ? '+' : '-' }} {{ abs(s.diff) | money }}</b> @if (abs(s.diff) > store.settings().alertDiff) { <span class="badge b-red">Supera la alerta</span> } } }
+          <td><b>{{ store.account(s.accountId)?.name }}</b><br /><span class="av" [style.background]="s.user | avcolor">{{ s.user[0] }}</span><b>{{ s.user }}</b><br /><small class="muted">{{ s.openedAt | fdate }}</small><br /><button class="pillbtn" style="margin-top: 4px" (click)="ver.set(s)"><i class="fa-solid fa-bars-staggered"></i>Ver movimientos</button></td>
+          <td><span class="muted">Hora</span> {{ s.openedAt | fdate }} {{ s.openedAt | ftime }}<br /><span class="muted">Saldo</span> {{ s.openingBalance | money }}@if (s.openingBalance !== s.previousClose) { <br /><span class="muted">Diferencia:</span> <b [class]="s.openingBalance > s.previousClose ? 'pos' : 'neg'">{{ s.openingBalance > s.previousClose ? '+' : '-' }} {{ abs(s.openingBalance - s.previousClose) | money }}</b> }</td>
+          <td>@if (s.closedAt) { <span class="muted">Hora</span> {{ s.closedAt | fdate }} {{ s.closedAt | ftime }}<br /><span class="muted">Saldo</span> {{ s.real | money }}
+                @if (s.diff) { <br /><span class="muted">Diferencia:</span> <b [class]="s.diff > 0 ? 'pos' : 'neg'">{{ s.diff > 0 ? '+' : '-' }} {{ abs(s.diff) | money }}</b> @if (abs(s.diff) > store.settings().alertDiff) { <span class="badge b-red">Supera la alerta</span> } } }
               @else { <i class="muted">Caja sin cerrar</i> }</td>
           <td><span class="link" (click)="nota(s)">+ {{ s.note ? 'Editar notas' : 'Agregar notas' }}</span>@if (s.note) { <br /><small class="muted">{{ s.note }}</small> }<br />
             <label class="row"><span class="sw" [class.on]="s.verified" (click)="store.setSessionVerified(s.id, !s.verified)"></span> <span class="badge" [class]="'badge ' + (s.verified ? 'b-green' : 'b-red')">{{ s.verified ? 'Sí' : 'No' }}</span> Verificado</label></td>
@@ -59,6 +60,7 @@ import { CashSession } from '../../core/models';
   `,
 })
 export class CierresComponent {
+  refrescar() { if (this.store.remote()) this.store.sync(); }
   readonly store = inject(Store);
   abs = Math.abs;
   readonly q = signal(''); readonly ver = signal<CashSession | null>(null); readonly difs = signal(false); readonly alertaOpen = signal(false);

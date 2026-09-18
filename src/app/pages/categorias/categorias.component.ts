@@ -12,13 +12,29 @@ const EMOJIS = ['🛒', '🍞', '🥤', '🍺', '🥛', '🍪', '🧴', '🧹', 
   imports: [FormsModule, ModalComponent],
   template: `
     <h1>Categorías</h1>
-    <p class="sub">Organizá tus movimientos y tu catálogo con categorías y subcategorías.</p>
-    <div class="toolbar"><input class="search" placeholder="Buscar categoría o subcategoría..." style="width: 300px" [ngModel]="q()" (ngModelChange)="q.set($event)" /><span class="sp"></span><button class="cta" (click)="nueva()">+ Nueva categoría</button></div>
+    <p class="sub" style="margin-bottom: 2px">Organizá tu catálogo en categorías.</p>
+    <p class="sub" style="margin-top: 0">Organizá tus movimientos con categorías y subcategorías.</p>
+    <div class="toolbar"><input class="search" placeholder="Buscar categoría o subcategoría..." [ngModel]="q()" (ngModelChange)="q.set($event)" /><span class="sp"></span>
+      <button><i class="fa-solid fa-filter"></i>Filtrar</button>
+      <button class="cta" (click)="nueva()"><i class="fa-solid fa-plus"></i>Nueva categoría</button></div>
     @for (c of lista(); track c.id) {
-      <div class="card" style="margin-bottom: 10px">
-        <div class="row"><span style="padding: 6px; border-radius: 8px" [style.background]="c.color + '33'">{{ c.emoji }}</span><b class="grow" [style.color]="c.color">{{ c.name }} <span class="badge b-blue">{{ c.subs.length }}</span></b>
-          <button style="height: 28px" (click)="sub.set({ catId: c.id, name: '' })">+ Subcategoría</button><span class="link" (click)="editar(c)">✎</span><span class="link neg" (click)="store.deleteCategory(c.id)">🗑</span></div>
-        @for (s of c.subs; track s.id) { <div class="row" style="padding: 6px 0 0 40px"><span>{{ c.emoji }}</span><span class="grow">{{ s.name }}</span><span class="link neg" (click)="store.deleteSubcategory(c.id, s.id)">🗑</span></div> }
+      <div class="cat-card">
+        <div class="cat-head"><span>Categoría</span><span>Acciones</span></div>
+        <div class="cat-row main">
+          <span class="cat-tile" [style.background]="c.color + '33'">{{ c.emoji }}</span>
+          <b class="grow" [style.color]="c.color">{{ c.name }} <span class="badge b-blue">{{ c.subs.length }}</span></b>
+          <button class="pillbtn" (click)="sub.set({ catId: c.id, name: '' })"><i class="fa-solid fa-plus"></i>Subcategoría</button>
+          <button class="sq blue" (click)="editar(c)" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>
+          <button class="sq" (click)="store.deleteCategory(c.id)" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
+        </div>
+        @for (s of c.subs; track s.id) {
+          <div class="cat-row subrow">
+            <span class="cat-tile sm" [style.background]="c.color + '33'">{{ c.emoji }}</span>
+            <span class="grow" [style.color]="c.color">{{ s.name }}</span>
+            <button class="sq blue" (click)="renombrar.set({ catId: c.id, id: s.id, name: s.name })" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>
+            <button class="sq danger" (click)="store.deleteSubcategory(c.id, s.id)" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        }
       </div>
     }
     @if (form(); as f) {
@@ -31,6 +47,12 @@ const EMOJIS = ['🛒', '🍞', '🥤', '🍺', '🥛', '🍪', '🧴', '🧹', 
         <div class="mf"><button (click)="form.set(null)">Cancelar</button><button class="cta" [disabled]="!f['name']?.trim() || !f['color'] || !f['emoji']" (click)="guardar(f)">Aceptar</button></div>
       </app-modal>
     }
+    @if (renombrar(); as r) {
+      <app-modal title="Editar subcategoría" [width]="400" (closed)="renombrar.set(null)">
+        <div class="field"><label>Nombre</label><input [(ngModel)]="r['name']" /></div>
+        <div class="mf"><button (click)="renombrar.set(null)">Cancelar</button><button class="cta" [disabled]="!r['name']?.trim()" (click)="store.renameSubcategory(r['catId'], r['id'], r['name'].trim()); renombrar.set(null)">Aceptar</button></div>
+      </app-modal>
+    }
     @if (sub(); as s) {
       <app-modal title="Nueva subcategoría" [width]="400" (closed)="sub.set(null)">
         <div class="field"><label>Nombre</label><input [(ngModel)]="s['name']" /></div>
@@ -40,6 +62,7 @@ const EMOJIS = ['🛒', '🍞', '🥤', '🍺', '🥛', '🍪', '🧴', '🧹', 
   `,
 })
 export class CategoriasComponent {
+  readonly renombrar = signal<any>(null);
   readonly store = inject(Store);
   readonly colores = COLORES; readonly emojis = EMOJIS;
   readonly q = signal(''); readonly form = signal<any>(null); readonly sub = signal<any>(null);
