@@ -6,7 +6,7 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "ecommerce-ninos": {
+    "punto-de-venta": {
       "projectType": "application",
       "schematics": {},
       "root": "",
@@ -16,7 +16,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:application",
           "options": {
-            "outputPath": "dist/ecommerce-ninos",
+            "outputPath": "dist/punto-de-venta",
             "index": "src/index.html",
             "browser": "src/main.ts",
             "polyfills": [
@@ -62,16 +62,13 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "ecommerce-ninos:build:production"
+              "buildTarget": "punto-de-venta:build:production"
             },
             "development": {
-              "buildTarget": "ecommerce-ninos:build:development"
+              "buildTarget": "punto-de-venta:build:development"
             }
           },
-          "defaultConfiguration": "development",
-          "options": {
-            "proxyConfig": "proxy.conf.json"
-          }
+          "defaultConfiguration": "development"
         },
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n"

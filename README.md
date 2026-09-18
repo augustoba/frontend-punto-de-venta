@@ -1,91 +1,59 @@
-# Estilos Pequeños — Frontend (Angular)
+# PuntoDeVenta
 
-Ecommerce de ropa para niños. Catálogo con filtros, carrito de compras y
-checkout **sin pasarela de pago**: el botón "Comprar" arma un mensaje de
-WhatsApp con el pedido y lo envía al dueño/a del local, quien responde por
-WhatsApp con el alias o link de Mercado Pago para coordinar el pago.
+This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 19.2.27.
 
-Incluye además un panel de administración simple (`/admin`) para cargar,
-editar, ocultar y eliminar productos.
+## Development server
 
-## ⚙️ Configuración obligatoria antes de publicar
-
-Editar `src/app/core/config/site-config.ts`:
-
-- `whatsappNumber`: número de WhatsApp del dueño/a, en formato internacional
-  sin `+`, espacios ni guiones (ej: `5491122334455`).
-- `admin.username` / `admin.password`: credenciales para entrar a `/admin`.
-  Valores actuales (placeholders, **cambiar antes de publicar**):
-
-  | Campo | Valor |
-  |---|---|
-  | usuario | `admin` |
-  | contraseña | `cambiar-esta-clave` |
-
-  **Ojo:** es un login simple pensado solo para esta primera versión sin
-  backend (las credenciales viven en el código del frontend), no un
-  mecanismo de seguridad real. Cuando el backend en Java esté listo, hay
-  que reemplazar `AuthService` por un login contra la API.
-
-## 🚀 Cómo correr el proyecto
+To start a local development server, run:
 
 ```bash
-npm install
-npm start          # http://localhost:4200
+ng serve
 ```
+
+Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+
+## Code scaffolding
+
+Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
 
 ```bash
-npm run build       # build de producción en dist/
+ng generate component component-name
 ```
 
-## 🗂️ Estructura
+For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
 
-```
-src/app/
-  core/
-    config/site-config.ts       # nombre de tienda, WhatsApp, credenciales admin
-    models/                     # Product, CartItem
-    services/
-      product.service.ts        # catálogo (mock + localStorage), CRUD para el admin
-      cart.service.ts           # estado del carrito (signals + localStorage)
-      whatsapp.service.ts       # arma el mensaje y el link wa.me del pedido
-      auth.service.ts           # login simple del panel admin
-    guards/admin.guard.ts       # protege las rutas /admin/*
-  shared/components/            # header, footer, card de producto, stepper de cantidad
-  features/
-    catalog/                    # catálogo público con filtros
-    product-detail/             # ficha de producto (talle, cantidad, agregar al carrito)
-    cart/                       # carrito + botón "Comprar por WhatsApp"
-    admin/                      # login, layout, listado y alta/edición de productos
+```bash
+ng generate --help
 ```
 
-## 🛍️ Cómo funciona el checkout por WhatsApp
+## Building
 
-1. El cliente arma su pedido en el carrito y carga su nombre.
-2. Al tocar **"Comprar por WhatsApp"** se abre `wa.me/<número>` en una
-   pestaña nueva con el mensaje ya redactado (detalle de prendas, talles,
-   cantidades y total). El cliente solo tiene que enviarlo.
-3. El dueño/a recibe el pedido por WhatsApp y responde con el alias o el
-   link de Mercado Pago para que el cliente pague directamente.
+To build the project run:
 
-Todo esto es 100% client-side (no requiere backend ni API de WhatsApp).
+```bash
+ng build
+```
 
-## 🔌 Conectar con el backend en Java (a futuro)
+This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
 
-Hoy los productos son datos de ejemplo guardados en `localStorage` a través
-de `ProductService`. Para conectarlo a una API real:
+## Running unit tests
 
-1. Agregar `provideHttpClient()` en `app.config.ts`.
-2. Reemplazar la lógica interna de `ProductService` (los métodos públicos:
-   `products`, `availableProducts`, `getById`, `create`, `update`, `delete`,
-   `toggleActive`) por llamadas `HttpClient` a los endpoints Java. Como los
-   componentes solo dependen de esos métodos/signals, no hace falta tocar
-   el resto de la app.
-3. Reemplazar `AuthService` por un login real contra el backend.
+To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
 
-## 📦 Stack
+```bash
+ng test
+```
 
-- Angular 19 (standalone components, signals)
-- Tailwind CSS v4
-- Sin dependencias de pasarela de pago
-# frontend-punto-de-venta
+## Running end-to-end tests
+
+For end-to-end (e2e) testing, run:
+
+```bash
+ng e2e
+```
+
+Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+
+## Additional Resources
+
+For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.

@@ -1,18 +1,1 @@
-<div class="min-h-screen flex flex-col">
-  <app-session-banner />
-
-  @if (!isAdminRoute()) {
-    <app-header />
-  }
-
-  <main class="flex-1">
-    <router-outlet />
-  </main>
-
-  @if (!isAdminRoute()) {
-    <app-footer />
-  }
-</div>
-
-<app-toast />
-<app-confirm-dialog />
+<router-outlet />
