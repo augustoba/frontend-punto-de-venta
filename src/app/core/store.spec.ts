@@ -140,4 +140,12 @@ describe('Store', () => {
     expect(s.db().stockMoves.filter((m) => m.productId === id).length).toBe(0);
     expect(s.balanceOfAccount(s.db().accounts[0].id)).toBe(6000);
   });
+
+  it('un recargo suma al total y no recibe el descuento automático por transferencia', () => {
+    s.updateSettings({ transferDiscount: 10 });
+    const id = s.saveProduct({ name: 'R', price: 1000, cost: 500 }, 5);
+    const v = s.registerSale({ customerId: null, lines: [{ productId: id, qty: 1 }], discountPct: -10, method: 'Transferencia', paid: true, notes: '', invoice: false });
+    expect(v.total).toBe(1100);
+    expect(() => s.registerSale({ customerId: null, lines: [{ productId: id, qty: 1 }], discountPct: -150, method: 'Efectivo', paid: true, notes: '', invoice: false })).toThrowError(/recargo/i);
+  });
 });

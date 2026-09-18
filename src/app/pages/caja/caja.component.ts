@@ -33,6 +33,14 @@ interface CartLine { productId: string; name: string; qty: number; price: number
           <div><h1>Nueva venta</h1><div class="muted">Agregá productos y guardá la venta</div></div></div>
       </div>
 
+      <div class="quick">
+        <button class="q q-caja" (click)="mov('ingreso')" title="Ingreso o retiro de caja"><i class="fa-solid fa-wallet"></i><span>Caja</span></button>
+        <a class="q q-prov" routerLink="/proveedores" title="Proveedores"><i class="fa-solid fa-truck"></i><span>Proveedores</span></a>
+        <button class="q q-gasto" (click)="mov('egreso')" title="Registrar un gasto"><i class="fa-solid fa-arrow-right-arrow-left"></i><span>Gastos</span><kbd>F7</kbd></button>
+        <button class="q q-cierre" (click)="cierre()" title="Cerrar la caja"><i class="fa-solid fa-chart-line"></i><span>Cierre caja</span><kbd>F4</kbd></button>
+        <a class="q q-hist" routerLink="/ventas" title="Historial de ventas"><i class="fa-solid fa-clock-rotate-left"></i><span>Historial</span><kbd>F6</kbd></a>
+        <a class="q q-dash" routerLink="/dashboard" title="Dashboard"><i class="fa-solid fa-gauge-high"></i><span>Dashboard</span></a>
+      </div>
       @if (!store.canSell()) {
         <div class="card" style="max-width: 460px; margin: 60px auto; text-align: center">
           <div style="font-size: 40px">🧾</div>
@@ -44,7 +52,9 @@ interface CartLine { productId: string; name: string; qty: number; price: number
         <div class="cash-grid">
           <div>
             <div class="card">
-              <b>Agregar producto</b>
+              <div class="row between"><b>Agregar producto</b>
+                <span class="lector" [class.off]="!lectorActivo()" [title]="lectorActivo() ? 'Escaneá un código de barras en cualquier momento' : 'El lector se pausa mientras hay una ventana abierta'"><i class="dot"></i>{{ lectorActivo() ? 'LECTOR ACTIVO' : 'LECTOR EN PAUSA' }}</span></div>
+              <button class="rapida" [class.on]="rapidaOn()" (click)="rapidaOn.set(!rapidaOn())" title="Modo rápido: F8 guarda la venta en efectivo sin preguntar"><i class="fa-solid fa-bolt"></i>Rápida<kbd>F1</kbd></button>
               <div class="field" style="margin-top: 10px"><label>Buscar</label>
                 <div class="search-wrap" data-tour="buscar"><input #buscador class="search" placeholder="Nombre o código" [ngModel]="q()" (ngModelChange)="q.set($event)" (keydown.enter)="enter()" (keydown.escape)="q.set('')" style="width: 100%" />
                   <button class="bc" (click)="camara.set(true)" title="Escanear código de barras con la cámara"><i class="fa-solid fa-barcode"></i></button></div></div>
@@ -56,7 +66,7 @@ interface CartLine { productId: string; name: string; qty: number; price: number
                 @if (!listas().length) { <option [ngValue]="null">Principal</option> }
               </select></div></div>
             <div class="card" style="margin-top: 12px; text-align: center" data-tour="guardar">
-              <button class="cta" style="width: 100%" [disabled]="!cart().length" (click)="abrirCobro()"><i class="fa-regular fa-floppy-disk"></i>Guardar venta</button>
+              <button class="cta" style="width: 100%" [disabled]="!cart().length" (click)="confirmar()"><i class="fa-regular fa-floppy-disk"></i>{{ rapidaOn() ? 'Confirmar venta' : 'Guardar venta' }}<kbd>F8</kbd></button>
               <p class="link" data-tour="promos" style="margin: 12px 0 0" (click)="promos.set(true)"><i class="fa-solid fa-tag" style="margin-right: 6px"></i>Promociones</p>
               <p class="link" data-tour="atajos" style="margin: 6px 0 0" (click)="atajos.set(true)"><i class="fa-regular fa-keyboard" style="margin-right: 6px"></i>Atajos</p>
             </div>
@@ -103,8 +113,25 @@ interface CartLine { productId: string; name: string; qty: number; price: number
                       </tr>
                     }
                   </table>
-                  <div class="right"><small class="muted">TOTAL</small><br /><strong style="font-size: 30px">{{ subtotal() | money }}</strong></div>
+                  <div class="ajustes-row">
+                    <button class="adj desc" (click)="abrirAjuste('descuento')"><i class="fa-solid fa-percent"></i>Descuento</button>
+                    <button class="adj rec" (click)="abrirAjuste('recargo')"><i class="fa-solid fa-arrow-trend-up"></i>Recargo</button>
+                    @if (ajusteGlobal() !== 0) { <span class="badge" [class.b-green]="ajusteGlobal() > 0" [class.b-amber]="ajusteGlobal() < 0">{{ ajusteGlobal() > 0 ? 'Descuento ' + ajusteGlobal() : 'Recargo ' + (-ajusteGlobal()) }}% <a class="link" (click)="ajusteGlobal.set(0)" title="Quitar">✕</a></span> }
+                  </div>
+                  <div class="right"><small class="muted">TOTAL</small><br /><strong style="font-size: 30px">{{ totalConAjuste() | money }}</strong></div>
                 }
+              </div>
+              <div class="card grilla">
+                <div class="chips"><button class="chip" [class.on]="catSel() === ''" (click)="catSel.set('')">Todos</button>@for (c of catsGrilla(); track c.id) { <button class="chip" [class.on]="catSel() === c.id" (click)="catSel.set(c.id)">{{ c.emoji }} {{ c.name }}</button> }</div>
+                @if (grilla().length) {
+                  <div class="tiles">@for (p of grilla(); track p.id) {
+                    <button class="tile" (click)="agregar(p)" [class.sinstock]="!p.service && store.stockOf(p) <= 0" [title]="p.name">
+                      @if (p.image) { <img [src]="p.image" [alt]="p.name" /> } @else { <span class="ph"><i class="fa-solid fa-bag-shopping"></i></span> }
+                      <b>{{ p.name }}</b><span class="pr">{{ precioDe(p) | money }}</span>
+                      @if (!p.service && store.stockOf(p) <= 0) { <em>Sin stock</em> }
+                    </button>
+                  }</div>
+                } @else { <p class="sub" style="text-align: center; padding: 14px 0">No hay productos en esta categoría.</p> }
               </div>
               @if (store.settings().createProductFromCash) { <p><button class="pillbtn" style="height: 32px" (click)="rapidoOpen()"><i class="fa-solid fa-plus"></i>Crear producto</button></p> }
             }
@@ -138,7 +165,7 @@ interface CartLine { productId: string; name: string; qty: number; price: number
           @if (!c.paid && c.customerId) { <span class="note info">Se registrará en la cuenta corriente de este cliente</span> }
           @if (!c.paid && !c.customerId) { <span class="note warn">Para dejar la venta a cuenta corriente elegí un cliente.</span> }
           @if (autoPct(c) > 0) { <span class="note ok">Descuento automático aplicado: {{ autoPct(c) }}%</span> }
-          <div class="row"><span class="link" (click)="descGlobal.set(true)">🏷 Aplicar descuento</span>@if (c.discountPct > 0) { <span class="badge b-green">{{ c.discountPct }}%</span> }</div>
+          <div class="row"><span class="link" (click)="abrirAjuste(c.discountPct < 0 ? 'recargo' : 'descuento')"><i class="fa-solid fa-percent" style="margin-right: 6px"></i>Aplicar descuento o recargo</span>@if (c.discountPct > 0) { <span class="badge b-green">Descuento {{ c.discountPct }}%</span> } @if (c.discountPct < 0) { <span class="badge b-amber">Recargo {{ -c.discountPct }}%</span> }</div>
         </div>
         <div class="card" style="margin-top: 12px">
           <label class="row" style="justify-content: space-between">Emitir factura <span class="sw" [class.on]="c.invoice" (click)="c.invoice = !c.invoice"></span></label>
@@ -159,9 +186,11 @@ interface CartLine { productId: string; name: string; qty: number; price: number
       </app-modal>
     }
     @if (descGlobal()) {
-      <app-modal title="Gestionar descuentos" [width]="360" (closed)="descGlobal.set(false)">
-        <div class="field"><label>Porcentaje de descuento</label><input type="number" min="0" max="100" [(ngModel)]="pctTmp" /></div>
-        <div class="mf"><button (click)="descGlobal.set(false)">Cancelar</button><button class="cta" (click)="cobro()!.discountPct = +pctTmp || 0; descGlobal.set(false)">Aceptar</button></div>
+      <app-modal title="Descuento o recargo" [width]="380" (closed)="descGlobal.set(false)">
+        <div class="seg" style="margin-bottom: 12px"><button [class.on]="tipoAjuste() === 'descuento'" (click)="tipoAjuste.set('descuento')">Descuento</button><button [class.on]="tipoAjuste() === 'recargo'" (click)="tipoAjuste.set('recargo')">Recargo</button></div>
+        <div class="field"><label>Porcentaje de {{ tipoAjuste() }}</label><input type="number" min="0" max="100" [(ngModel)]="pctTmp" /></div>
+        <p class="sub">{{ tipoAjuste() === 'descuento' ? 'Se resta del total de la venta.' : 'Se suma al total de la venta (por ejemplo, por pago con tarjeta).' }}</p>
+        <div class="mf"><button (click)="descGlobal.set(false)">Cancelar</button><button class="cta" (click)="aplicarAjuste()">Aceptar</button></div>
       </app-modal>
     }
     @if (lineaDesc(); as ld) {
@@ -190,7 +219,7 @@ interface CartLine { productId: string; name: string; qty: number; price: number
     @if (atajos()) {
       <app-modal title="Atajos" [width]="460" (closed)="atajos.set(false)">
         <table style="background: none">
-          <tr><td>Buscar</td><td>Alt + F</td></tr><tr><td>Limpiar búsqueda</td><td>Esc</td></tr><tr><td>Guardar venta</td><td>Alt + S</td></tr>
+          <tr><td>Modo Rápida (F8 guarda al toque)</td><td>F1</td></tr><tr><td>Cierre de caja</td><td>F4</td></tr><tr><td>Historial de ventas</td><td>F6</td></tr><tr><td>Registrar un gasto</td><td>F7</td></tr><tr><td>Confirmar / guardar la venta</td><td>F8</td></tr><tr><td>Buscar</td><td>Alt + F</td></tr><tr><td>Limpiar búsqueda</td><td>Esc</td></tr><tr><td>Guardar venta</td><td>Alt + S</td></tr>
           <tr><td>Crear producto rápido</td><td>Alt + Q</td></tr><tr><td>Ver promociones</td><td>Alt + M</td></tr><tr><td>Sumar / restar a la última línea</td><td>Alt + + / Alt + −</td></tr><tr><td>Eliminar la última línea</td><td>Alt + X</td></tr>
         </table>
       </app-modal>
@@ -244,6 +273,52 @@ export class CajaComponent implements OnInit, AfterViewInit {
   readonly metodos: PayMethod[] = ['Efectivo', 'Transferencia', 'Tarjeta'];
   readonly q = signal('');
   readonly camara = signal(false);
+  // --- POS estilo Ventario: recargo, grilla, accesos rápidos, modo rápido y atajos F ---
+  readonly ajusteGlobal = signal(0);                       // > 0 descuento, < 0 recargo (se carga al cobrar)
+  readonly tipoAjuste = signal<'descuento' | 'recargo'>('descuento');
+  readonly catSel = signal('');
+  readonly rapidaOn = signal(false);
+  readonly lectorActivo = computed(() => !this.cobro() && !this.rapido() && !this.camara() && this.store.canSell());
+  totalConAjuste(): number { return r2(this.subtotal() * (1 - this.ajusteGlobal() / 100)); }
+  abrirAjuste(tipo: 'descuento' | 'recargo') {
+    const a = this.cobro() ? this.cobro().discountPct : this.ajusteGlobal();
+    this.tipoAjuste.set(tipo); this.pctTmp = Math.abs(a); this.descGlobal.set(true);
+  }
+  aplicarAjuste() {
+    const v = Math.min(100, Math.max(0, +this.pctTmp || 0)) * (this.tipoAjuste() === 'recargo' ? -1 : 1);
+    this.ajusteGlobal.set(v);
+    if (this.cobro()) this.cobro().discountPct = v;
+    this.descGlobal.set(false);
+  }
+  readonly catsGrilla = computed(() => { const ids = new Set(this.store.db().products.filter((p) => !p.archived && p.categoryId).map((p) => p.categoryId)); return this.store.categories().filter((c) => ids.has(c.id)); });
+  readonly grilla = computed(() => this.store.db().products.filter((p) => !p.archived && (!this.catSel() || p.categoryId === this.catSel())).slice(0, 80));
+  /** Ingreso / egreso de caja: con caja abierta abre el formulario; si no, lleva a Cuentas. */
+  mov(tipo: 'ingreso' | 'egreso') { if (this.store.openSession()) this.opOpen(tipo); else this.router.navigate(['/cuentas']); }
+  cierre() { if (this.store.openSession()) this.cerrarOpen(); else this.decir('✖ No hay una caja abierta para cerrar', false); }
+  /** Modo Rápida (F1): F8 guarda al toque en efectivo, pagada y a consumidor final. */
+  confirmar() {
+    if (!this.cart().length) return;
+    if (this.rapidaOn()) { this.guardarRapida(); return; }
+    this.abrirCobro();
+  }
+  private async guardarRapida() {
+    try {
+      const s = await this.store.registerSale({ customerId: null, lines: this.cart().map((l) => ({ productId: l.productId, qty: l.qty, price: l.price, discountUnit: l.discountUnit })), discountPct: this.ajusteGlobal(), method: 'Efectivo', paid: true, notes: '', invoice: false, budgetId: null, priceListId: this.listaId() });
+      this.cart.set([]); this.ajusteGlobal.set(0);
+      this.decir(`✔ Venta #${s.number} guardada`, true);
+    } catch (e: any) { this.error.set(e.message ?? 'No se pudo guardar la venta'); this.decir('✖ ' + (e.message ?? 'No se pudo guardar la venta'), false); }
+  }
+  /** Atajos F1/F4/F6/F7/F8 (los llama `atajo`, que es el único oyente de teclado de la ventana). */
+  private teclasF(e: KeyboardEvent) {
+    const k = e.key;
+    if (!/^F(1|4|6|7|8)$/.test(k)) return;
+    e.preventDefault();
+    if (k === 'F1') this.rapidaOn.set(!this.rapidaOn());
+    else if (k === 'F4') this.cierre();
+    else if (k === 'F6') this.router.navigate(['/ventas']);
+    else if (k === 'F7') this.mov('egreso');
+    else if (k === 'F8') this.confirmar();
+  }
   readonly aviso = signal('');
   readonly avisoOk = signal(true);
   private readonly scan = new ScanBuffer();
@@ -322,6 +397,7 @@ export class CajaComponent implements OnInit, AfterViewInit {
   @HostListener('window:keydown', ['$event'])
   atajo(e: KeyboardEvent) {
     if (!e.altKey && !e.ctrlKey && !e.metaKey) this.lectorDeMano(e);
+    this.teclasF(e);
     if (!e.altKey) return;
     const k = e.key.toLowerCase();
     const last = this.cart().length - 1;
@@ -371,7 +447,7 @@ export class CajaComponent implements OnInit, AfterViewInit {
     this.q.set('');
   }
   /** Precio según la lista elegida: Principal usa oferta/precio; otra lista aplica su porcentaje al precio base. */
-  private precioDe(p: Product): number {
+  precioDe(p: Product): number {
     const l = this.listas().find((x) => x.id === this.listaId());
     return !l || l.main ? (p.offer > 0 ? p.offer : p.price) : r2(p.price * (1 + l.percent / 100));
   }
@@ -404,7 +480,7 @@ export class CajaComponent implements OnInit, AfterViewInit {
   // cobro
   abrirCobro(customerId: string | null = null) {
     this.error.set('');
-    this.cobro.set({ customerId, method: 'Efectivo' as PayMethod, paid: true, discountPct: 0, invoice: false, print: this.store.settings().receiptAction === 'imprimir', gift: false, notes: '' });
+    this.cobro.set({ customerId, method: 'Efectivo' as PayMethod, paid: true, discountPct: this.ajusteGlobal(), invoice: false, print: this.store.settings().receiptAction === 'imprimir', gift: false, notes: '' });
   }
   elegirCliente(v: string | null) {
     const c = this.cobro();
@@ -417,7 +493,7 @@ export class CajaComponent implements OnInit, AfterViewInit {
   }
   togglePago(c: any) { c.paid = !c.paid; }
   autoPct(c: any): number { const s = this.store.settings(); return c.method === 'Transferencia' && c.paid && s.transferDiscount > 0 ? s.transferDiscount : 0; }
-  totalCobro(c: any): number { const pct = Math.max(c.discountPct, this.autoPct(c)); return r2(this.subtotal() * (1 - pct / 100)); }
+  totalCobro(c: any): number { const pct = c.discountPct < 0 ? c.discountPct : Math.max(c.discountPct, this.autoPct(c)); return r2(this.subtotal() * (1 - pct / 100)); }
   async guardar(c: any) {
     try {
       const s = await this.store.registerSale({
@@ -426,7 +502,7 @@ export class CajaComponent implements OnInit, AfterViewInit {
       });
       if (c.print) this.imprimir(s.number, false);
       if (c.gift) this.imprimir(s.number, true);
-      this.cobro.set(null); this.cart.set([]); this.budgetId = null;
+      this.cobro.set(null); this.cart.set([]); this.budgetId = null; this.ajusteGlobal.set(0);
       if (this.route.snapshot.queryParamMap.get('presupuesto')) this.router.navigate(['/caja']);
     } catch (e: any) { this.error.set(e.message ?? 'No se pudo guardar la venta'); }
   }

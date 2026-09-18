@@ -277,8 +277,10 @@ export class Store {
         return { productId: p.id, name: p.name, qty: l.qty, price: r2(base), discountUnit: r2(l.discountUnit ?? 0), cost: p.combo.length ? r2(p.combo.reduce((t, c) => t + (d.products.find((x) => x.id === c.productId)?.cost ?? 0) * c.qty, 0)) : p.cost, categoryId: p.categoryId };
       });
       const subtotal = r2(lines.reduce((s, l) => s + (l.price - l.discountUnit) * l.qty, 0));
-      let pct = i.discountPct;
-      if (i.autoDiscount !== false && i.method === 'Transferencia' && d.settings.transferDiscount > 0 && (!pct || !d.settings.cumulativeDiscounts)) pct = Math.max(pct, d.settings.transferDiscount);
+      let pct = i.discountPct;   // > 0 descuento, < 0 recargo
+      if (pct > 100) throw new Error('El descuento no puede superar el 100 %.');
+      if (pct < -100) throw new Error('El recargo no puede superar el 100 %.');
+      if (pct >= 0 && i.autoDiscount !== false && i.method === 'Transferencia' && d.settings.transferDiscount > 0 && (!pct || !d.settings.cumulativeDiscounts)) pct = Math.max(pct, d.settings.transferDiscount);
       const discountAmount = r2(subtotal * (pct / 100));
       const total = r2(subtotal - discountAmount);
       const onAccount = i.method === 'Cuenta corriente' || !i.paid;

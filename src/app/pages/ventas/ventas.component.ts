@@ -71,7 +71,7 @@ import { Sale } from '../../core/models';
         <table style="background: none"><tr><th>Producto</th><th>Precio</th><th>Cant.</th><th>Desc.</th><th class="right">Subtotal</th></tr>
           @for (l of v.lines; track $index) { <tr><td>{{ l.name }}</td><td>{{ l.price | money }}</td><td>×{{ l.qty }}</td><td>{{ l.discountUnit ? (l.discountUnit | money) : '-' }}</td><td class="right">{{ (l.price - l.discountUnit) * l.qty | money }}</td></tr> }
         </table>
-        <div class="right" style="margin-top: 8px">Subtotal {{ v.subtotal | money }}<br />Descuento ({{ v.discountPct }}%) − {{ v.discountAmount | money }}<br /><b style="font-size: 20px">Total {{ v.total | money }}</b></div>
+        <div class="right" style="margin-top: 8px">Subtotal {{ v.subtotal | money }}<br />{{ v.discountPct < 0 ? 'Recargo (' + (-v.discountPct) + '%) +' : 'Descuento (' + v.discountPct + '%) −' }} {{ (v.discountAmount < 0 ? -v.discountAmount : v.discountAmount) | money }}<br /><b style="font-size: 20px">Total {{ v.total | money }}</b></div>
         @if (v.notes) { <p class="muted">Notas: {{ v.notes }}</p> }
         <div class="mf"><button class="cta" (click)="detalle.set(null)">Aceptar</button></div>
       </app-modal>
