@@ -1,9 +1,9 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, HostListener, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Api } from '../../core/api';
 import { CamaraScannerComponent } from '../../shared/camara-scanner.component';
-import { beep } from '../../core/scanner';
+import { ScanBuffer, beep } from '../../core/scanner';
 import { ListasPreciosComponent } from './listas-precios.component';
 import { ModalComponent } from '../../shared/modal.component';
 import { MoneyPipe } from '../../shared/format';
@@ -138,12 +138,14 @@ type StockFilter = '' | 'ideal' | 'critico' | 'sin';
             </div>
           }
           <div class="field"><label>Código de barra</label>
-            <div class="search-wrap barcode-in">
-              <input [(ngModel)]="f.barcode" (keydown.enter)="$event.preventDefault()" placeholder="Escribilo o escanealo" inputmode="numeric" />
+            <div class="search-wrap barcode-in" [class.esperando]="modoLector()">
+              <input id="campo-codigo" [(ngModel)]="f.barcode" (keydown.enter)="$event.preventDefault()" placeholder="Escribilo o escanealo" inputmode="numeric" />
+              <button type="button" class="bc2" [class.on]="modoLector()" (click)="activarLector()" title="Escanear con lector de mano"><i class="fa-solid fa-barcode"></i></button>
               <button type="button" class="bc" (click)="camaraCodigo.set(true)" title="Escanear con la cámara"><i class="fa-solid fa-camera"></i></button>
             </div>
+            @if (modoLector()) { <small class="lector-on"><i class="fa-solid fa-satellite-dish"></i> Esperando el lector: escaneá el código del producto…</small> }
             @if (codigoRepetido(f); as otro) { <small style="color: #a5620a">Ya lo tiene «{{ otro }}».</small> }
-            @else { <small class="muted">Escribilo, usá un lector (con el cursor acá) o la cámara.</small> }
+            @else if (!modoLector()) { <small class="muted">Escribilo, tocá <b>lector</b> y escaneá, o usá la <b>cámara</b>.</small> }
           </div>
           <div class="field"><label>Categoría</label><select [(ngModel)]="f.categoryId"><option [ngValue]="null">—</option>@for (c of store.categories(); track c.id) {<option [ngValue]="c.id">{{ c.name }}</option>}</select></div>
           <div class="field"><label>Proveedor (opcional)</label><select [(ngModel)]="f.supplierId"><option [ngValue]="null">Sin proveedor</option>@for (s of store.suppliers(); track s.id) {<option [ngValue]="s.id">{{ s.name }}</option>}</select></div>
@@ -249,6 +251,25 @@ export class StockComponent {
   }
   readonly fotoError = signal('');
   readonly camaraCodigo = signal(false);
+  readonly modoLector = signal(false);
+  private readonly scan = new ScanBuffer();
+  /** Deja el campo del código «esperando» al lector de mano: la primera lectura completa lo carga. */
+  activarLector() {
+    this.modoLector.set(!this.modoLector());
+    this.scan.reset();
+    if (this.modoLector()) setTimeout(() => (document.getElementById('campo-codigo') as HTMLInputElement | null)?.focus());
+  }
+  @HostListener('window:keydown', ['$event'])
+  teclaLector(e: KeyboardEvent) {
+    if (!this.modoLector() || !this.form() || e.altKey || e.ctrlKey || e.metaKey) return;
+    if (e.key === 'Escape') { this.modoLector.set(false); return; }
+    const code = this.scan.push(e.key, e.timeStamp);
+    if (!code) return;
+    e.preventDefault();
+    this.form().barcode = code;
+    this.modoLector.set(false);
+    beep(true);
+  }
   readonly msgCodigo = signal('');
   /** Nombre del producto que ya tiene ese código (para avisar antes de guardar un duplicado). */
   codigoRepetido(f: any): string {

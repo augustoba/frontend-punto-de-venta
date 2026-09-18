@@ -348,3 +348,12 @@ table.plano{background:transparent;border:0;box-shadow:none}
 @media (max-width:900px){.donuts,.kpi3,.kpi4{grid-template-columns:1fr}}
 
 .barcode-in input{width:100%;padding-right:42px}
+
+.barcode-in input{padding-right:78px}
+.search-wrap .bc2{position:absolute;right:40px;top:50%;transform:translateY(-50%);width:32px;height:32px;padding:0;border:0;background:transparent;color:#555;display:grid;place-items:center;border-radius:8px}
+.search-wrap .bc2 i{margin:0;font-size:15px}
+.search-wrap .bc2.on{background:rgba(5,133,254,.15);color:#0a6fd6}
+.barcode-in.esperando input{border-color:#0585fe;box-shadow:0 0 0 3px rgba(5,133,254,.2);animation:latido 1.2s ease-in-out infinite}
+@keyframes latido{50%{box-shadow:0 0 0 6px rgba(5,133,254,.08)}}
+.lector-on{color:#0a6fd6;font-weight:700}.lector-on i{margin-right:5px}
+@media (prefers-reduced-motion:reduce){.barcode-in.esperando input{animation:none}}
