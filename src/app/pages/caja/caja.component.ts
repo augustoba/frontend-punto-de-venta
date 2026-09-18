@@ -1,7 +1,9 @@
-import { Component, ElementRef, HostListener, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, HostListener, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ModalComponent } from '../../shared/modal.component';
+import { CamaraScannerComponent } from '../../shared/camara-scanner.component';
+import { ScanBuffer, beep } from '../../core/scanner';
 import { MoneyPipe } from '../../shared/format';
 import { Api } from '../../core/api';
 import { Store, r2 } from '../../core/store';
@@ -12,7 +14,7 @@ interface CartLine { productId: string; name: string; qty: number; price: number
 /** Caja registradora (réplica de Envi /cash-register): buscador, carrito, descuentos, cobro y arqueo de caja. */
 @Component({
   selector: 'app-caja',
-  imports: [FormsModule, RouterLink, ModalComponent, MoneyPipe],
+  imports: [FormsModule, RouterLink, ModalComponent, MoneyPipe, CamaraScannerComponent],
   template: `
     <div class="cash">
       <div class="cash-top">
@@ -35,6 +37,8 @@ interface CartLine { productId: string; name: string; qty: number; price: number
               <b>Agregar producto</b>
               <div class="field" style="margin-top: 10px"><label>Buscar</label>
                 <input #buscador placeholder="🔍 Nombre o código" [ngModel]="q()" (ngModelChange)="q.set($event)" (keydown.enter)="enter()" (keydown.escape)="q.set('')" style="width: 100%" /></div>
+              <button style="margin-top: 8px; width: 100%" (click)="camara.set(true)"><i class="fa-solid fa-camera"></i> Escanear con la cámara</button>
+              @if (aviso() && !camara()) { <p class="sub" style="margin: 8px 0 0" [style.color]="avisoOk() ? '#1f7a4d' : '#8a1c1c'">{{ aviso() }}</p> }
             </div>
             @if (listas().length > 1) {
               <div class="card" style="margin-top: 12px"><div class="field"><label>Lista de precios</label>
@@ -155,9 +159,11 @@ interface CartLine { productId: string; name: string; qty: number; price: number
         <div class="mf"><button (click)="lineaDesc.set(null)">Cancelar</button><button class="cta" (click)="aplicarLinea()">Aceptar</button></div>
       </app-modal>
     }
+    @if (camara()) { <app-camara-scanner [mensaje]="aviso()" (codigo)="porCodigo($event)" (closed)="camara.set(false)" /> }
     @if (rapido(); as r) {
       <app-modal title="Nuevo producto" [width]="420" (closed)="rapido.set(null)">
         <div class="field"><label>Nombre</label><input [(ngModel)]="r.name" /></div>
+        @if (r.barcode) { <p class="sub" style="margin: 6px 0 0"><i class="fa-solid fa-barcode"></i> Código: <b>{{ r.barcode }}</b></p> }
         <div class="grid2" style="margin-top: 8px"><div class="field"><label>Precio</label><input type="number" [(ngModel)]="r.price" /></div><div class="field"><label>Costo</label><input type="number" [(ngModel)]="r.cost" /></div></div>
         <div class="mf"><button (click)="rapido.set(null)">Cancelar</button><button class="cta" [disabled]="!r.name.trim()" (click)="crearRapido(r)">Aceptar</button></div>
       </app-modal>
@@ -207,7 +213,7 @@ interface CartLine { productId: string; name: string; qty: number; price: number
     }
   `,
 })
-export class CajaComponent implements OnInit {
+export class CajaComponent implements OnInit, AfterViewInit {
   readonly store = inject(Store);
   private readonly api = inject(Api);
   private readonly route = inject(ActivatedRoute);
@@ -218,6 +224,11 @@ export class CajaComponent implements OnInit {
   abs = Math.abs;
   readonly metodos: PayMethod[] = ['Efectivo', 'Transferencia', 'Tarjeta'];
   readonly q = signal('');
+  readonly camara = signal(false);
+  readonly aviso = signal('');
+  readonly avisoOk = signal(true);
+  private readonly scan = new ScanBuffer();
+  private avisoTimer?: ReturnType<typeof setTimeout>;
   readonly soloStock = signal(true);
   readonly cart = signal<CartLine[]>([]);
   /** Listas de precios del servidor (Principal + las que cree el negocio). Sin API sólo hay precio base. */
@@ -258,8 +269,23 @@ export class CajaComponent implements OnInit {
     if (!this.store.canSell()) setTimeout(() => this.abrirOpen());
   }
 
+  /**
+   * Lector de mano: si el foco no está en un campo de texto (ni hay un modal abierto), una ráfaga de teclas rápida
+   * cerrada con Enter se toma como código de barras. Cuando el foco está en el buscador lo resuelve `enter()`.
+   */
+  private lectorDeMano(e: KeyboardEvent) {
+    const code = this.scan.push(e.key, e.timeStamp);
+    const el = e.target instanceof HTMLElement ? e.target : null;
+    const enCampo = !!el && (['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName) || el.isContentEditable);
+    if (!code || enCampo || el?.closest('.modal') || this.cobro() || this.rapido() || this.camara()) return;
+    e.preventDefault();      // el Enter del lector no debe accionar el botón que tenga el foco
+    this.porCodigo(code, true);
+    this.buscador?.nativeElement.focus();
+  }
+
   @HostListener('window:keydown', ['$event'])
   atajo(e: KeyboardEvent) {
+    if (!e.altKey && !e.ctrlKey && !e.metaKey) this.lectorDeMano(e);
     if (!e.altKey) return;
     const k = e.key.toLowerCase();
     const last = this.cart().length - 1;
@@ -277,10 +303,29 @@ export class CajaComponent implements OnInit {
   // carrito
   enter() {
     const q = this.q().trim();
-    const exacto = this.store.db().products.find((p) => !p.archived && p.barcode && p.barcode === q);
-    if (exacto) { this.agregar(exacto); return; }
-    if (this.resultados().length === 1) this.agregar(this.resultados()[0]);
+    if (!q) return;
+    if (this.store.db().products.some((p) => !p.archived && p.barcode && p.barcode === q)) { this.porCodigo(q); return; }
+    if (this.resultados().length === 1) { this.agregar(this.resultados()[0]); return; }
+    if (/^\d{6,}$/.test(q)) this.porCodigo(q);   // parece un código de barras y no existe: avisa
   }
+
+  /** Agrega el producto cuyo código de barras coincide (lector de mano, cámara o buscador). Avisa si no existe. */
+  porCodigo(code: string, ofrecerCrear = false) {
+    const p = this.store.db().products.find((x) => !x.archived && x.barcode && x.barcode === code);
+    if (p) {
+      this.agregar(p);
+      this.decir(`✔ ${p.name} agregado`, true);
+    } else {
+      this.decir(`✖ No hay ningún producto con el código ${code}`, false);
+      if (ofrecerCrear && this.store.settings().createProductFromCash) this.rapidoOpen(code);
+    }
+  }
+  private decir(msg: string, ok: boolean) {
+    this.aviso.set(msg); this.avisoOk.set(ok); beep(ok);
+    clearTimeout(this.avisoTimer);
+    this.avisoTimer = setTimeout(() => this.aviso.set(''), 4000);
+  }
+  ngAfterViewInit(): void { setTimeout(() => this.buscador?.nativeElement.focus()); }
   agregar(p: Product) {
     const precio = this.precioDe(p);
     this.cart.update((c) => {
@@ -312,10 +357,10 @@ export class CajaComponent implements OnInit {
     this.lineaDesc.set({ i, base: l.price, monto: l.discountUnit, pct: l.price ? r2((l.discountUnit / l.price) * 100) : 0, final: r2(l.price - l.discountUnit) });
   }
   aplicarLinea() { const d = this.lineaDesc(); this.cart.update((c) => c.map((l, k) => (k === d.i ? { ...l, discountUnit: Math.max(0, r2(d.monto)) } : l))); this.lineaDesc.set(null); }
-  rapidoOpen() { this.rapido.set({ name: '', price: 0, cost: 0 }); }
+  rapidoOpen(barcode = '') { this.rapido.set({ name: '', price: 0, cost: 0, barcode }); }
   async crearRapido(r: any) {
     try {
-      const id = await this.store.saveProduct({ name: r.name.trim(), price: +r.price || 0, cost: +r.cost || 0 }, 0);
+      const id = await this.store.saveProduct({ name: r.name.trim(), barcode: r.barcode ?? '', price: +r.price || 0, cost: +r.cost || 0 }, 0);
       const p = this.store.product(id)!; this.rapido.set(null); this.agregar(p);
     } catch (e: any) { this.error.set(e.message ?? 'No se pudo crear el producto'); }
   }
