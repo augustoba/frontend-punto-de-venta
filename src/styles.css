@@ -290,3 +290,10 @@ th.c,td.c{text-align:center;width:64px}
 .sw-dot.sel{outline:2px solid #232323;outline-offset:2px}
 .pillbtn.blue{background:rgba(5,133,254,.12);color:#0a6fd6;border:0;height:30px;padding:0 14px}
 .biz-logo.empty{background:var(--biz,#eeb37a);color:#fff;border:0;border-style:solid}
+
+.datepill{display:inline-flex;align-items:center;gap:6px;background:#21213b;color:#fff;border-radius:99px;padding:3px 12px 3px 4px;font-size:11px;font-weight:700;white-space:nowrap}
+.av.sm{width:18px;height:18px;border-radius:5px;font-size:10px;margin:0}
+.numpill{display:inline-block;min-width:34px;text-align:center;background:rgba(0,0,0,.07);border-radius:99px;padding:2px 10px;font-size:12px;font-weight:700}
+.mov{display:inline-flex;align-items:center;gap:5px;border-radius:99px;padding:2px 12px;font-size:12px;font-weight:800}
+.mov i{font-size:11px;margin:0}.mov.up{background:rgba(31,157,99,.16);color:#1b7f4f}.mov.down{background:rgba(209,70,90,.14);color:#c23a52}
+.img-ph.sm{width:34px;height:34px;border-radius:8px;font-size:13px;vertical-align:middle}
