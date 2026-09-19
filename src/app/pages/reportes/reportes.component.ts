@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { FdatePipe, FtimePipe, MoneyPipe } from '../../shared/format';
 import { Store, r2 } from '../../core/store';
@@ -16,13 +16,15 @@ const ymd = (iso: string) => iso.slice(0, 10);
   selector: 'app-reportes',
   imports: [FormsModule, MoneyPipe, FdatePipe, FtimePipe],
   template: `
-    <h1>Reportes</h1>
-    <p class="sub">Analizá el rendimiento de tu negocio con reportes.</p>
-    <div class="tabs">
-      @for (t of tabs; track t.id) { <span [class.on]="tab() === t.id" style="cursor: pointer" (click)="tab.set(t.id)">{{ t.label }}</span> }
-    </div>
+    @if (!embebido()) {
+      <h1>Reportes</h1>
+      <p class="sub">Analizá el rendimiento de tu negocio con reportes.</p>
+      <div class="tabs">
+        @for (t of tabs; track t.id) { <span [class.on]="tab() === t.id" style="cursor: pointer" (click)="tab.set(t.id)">{{ t.label }}</span> }
+      </div>
+    }
 
-    @switch (tab()) {
+    @switch (tabActual()) {
       @case ('ventas') {
         <div class="rep-grid">
           <div class="card">
@@ -174,6 +176,10 @@ export class ReportesComponent {
   readonly store = inject(Store);
   readonly tabs: { id: Tab; label: string }[] = [{ id: 'ventas', label: 'Ventas' }, { id: 'tesoreria', label: 'Tesorería' }, { id: 'stock', label: 'Stock' }, { id: 'productos', label: 'Productos' }, { id: 'clientes', label: 'Clientes' }, { id: 'rentabilidad', label: 'Rentabilidad' }];
   readonly tab = signal<Tab>('ventas');
+  /** Dentro del Dashboard el reporte se muestra sin título ni solapas propias y con la pestaña que indique el padre. */
+  readonly embebido = input(false);
+  readonly tabFija = input<Tab | null>(null);
+  readonly tabActual = computed(() => this.tabFija() ?? this.tab());
   readonly dia = signal(0); readonly mesOff = signal(0); readonly rentOff = signal(0); readonly soloCobradas = signal(false);
   readonly desde = signal(`${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-01`); readonly hasta = signal(new Date().toISOString().slice(0, 10));
   readonly cliPeriodo = signal<'mes' | 'anio' | 'siempre'>('mes');

@@ -8,13 +8,9 @@ export const GUIAS: Record<string, TourStep[]> = {
   dashboard: [
     { titulo: 'Tu resumen del negocio', texto: 'Acá ves cómo viene el negocio de un vistazo: ventas, ganancia, gastos, caja y stock.' },
     { titulo: 'Tarjetas del día', texto: 'Productos, ventas de la semana, lo vendido hoy y las alertas de stock. Se actualizan solas.', selector: '.gcards' },
+    { titulo: 'Solapas de reportes', texto: 'Resumen es el tablero del negocio. Tesorería, Stock, Productos, Clientes y Rentabilidad son los reportes: elegí una solapa para analizarla.', selector: '.tabs' },
     { titulo: 'Análisis financiero', texto: 'Ganancia y egresos día por día. Cambiá el mes con las flechas y alterná entre barras y línea.', selector: '.dash-grid > .card:first-child' },
     { titulo: 'Más abajo', texto: 'Top de días y productos, ventas por hora, márgenes bajos, cuentas corrientes y últimos movimientos.' },
-  ],
-  reportes: [
-    { titulo: 'Reportes', texto: 'Analizá el rendimiento del negocio desde distintos ángulos.' },
-    { titulo: 'Pestañas', texto: 'Ventas, Tesorería, Stock, Productos, Clientes y Rentabilidad. Cada una responde una pregunta distinta.', selector: '.tabs' },
-    { titulo: 'Períodos', texto: 'Usá las flechas y los selectores de fecha para comparar días, semanas, meses o rangos.' },
   ],
   'historial-precios': [
     { titulo: 'Historial de precios', texto: 'Cada cambio de precio, costo u oferta queda registrado con fecha, quién lo hizo y la variación.' },

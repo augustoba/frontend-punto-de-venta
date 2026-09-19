@@ -1,5 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { ReportesComponent } from '../reportes/reportes.component';
 import { MoneyPipe, fdate } from '../../shared/format';
 import { Store, r2 } from '../../core/store';
 import { Sale } from '../../core/models';
@@ -11,11 +12,16 @@ const mismoDia = (iso: string, d: Date) => new Date(iso).toDateString() === d.to
 /** Dashboard: resumen del negocio (ventas, ganancia, egresos, caja, stock y alertas). Todo se calcula de los datos del store. */
 @Component({
   selector: 'app-dashboard',
-  imports: [RouterLink, MoneyPipe],
+  imports: [RouterLink, MoneyPipe, ReportesComponent],
   template: `
     <div class="row between" style="align-items: flex-start"><div><h1>Dashboard</h1><p class="sub">Resumen de tu negocio</p></div>
       <button (click)="actualizar()"><i class="fa-solid fa-rotate-right"></i>Actualizar</button></div>
 
+    <div class="tabs">@for (s of solapas; track s.id) { <span [class.on]="tab() === s.id" style="cursor: pointer" (click)="tab.set(s.id)">{{ s.label }}</span> }</div>
+
+    @if (tab() !== 'resumen') {
+      <app-reportes [embebido]="true" [tabFija]="tabReporte()" />
+    } @else {
     @if (!bannerCerrado() && productos() === 0) {
       <div class="card banner-inicio">
         <span class="bi-ic"><i class="fa-solid fa-box-open"></i></span>
@@ -89,6 +95,11 @@ const mismoDia = (iso: string, d: Date) => new Date(iso).toDateString() === d.to
       </div>
 
       <div class="card">
+        <b>Ventas por medio de pago</b><br /><small class="muted">{{ nombreMes() }}</small>
+        @for (m of porMedio(); track m.nombre) { <div class="fin-row"><i class="dot" [style.background]="m.color"></i><div class="grow">{{ m.nombre }}<div class="barra"><i [style.width.%]="m.pct" [style.background]="m.color"></i></div></div><div style="text-align: right"><b>{{ m.total | money }}</b><br /><small class="muted">{{ m.n }} {{ m.n === 1 ? 'venta' : 'ventas' }}</small></div></div> }
+        @empty { <div class="vacio-mini"><i class="fa-solid fa-credit-card"></i>Sin ventas aún<br /><small class="muted">Acá vas a ver cómo te pagan</small></div> }
+      </div>
+      <div class="card">
         <b>Rentabilidad</b><br /><small class="muted">Márgenes de ganancia</small>
         @if (margenesBajos().length) {
           @for (p of margenesBajos(); track p.id) { <div class="fin-row"><i class="fa-solid fa-triangle-exclamation" style="color:#d9822b"></i><div class="grow">{{ p.name }}</div><b class="neg">{{ p.margen }}%</b></div> }
@@ -113,10 +124,17 @@ const mismoDia = (iso: string, d: Date) => new Date(iso).toDateString() === d.to
         @empty { <div class="vacio-mini"><i class="fa-solid fa-boxes-stacked"></i>Sin movimientos<br /><small class="muted">Los movimientos aparecerán aquí</small></div> }
       </div>
     </div>
+    }
   `,
 })
 export class DashboardComponent {
   readonly store = inject(Store);
+  readonly solapas: { id: 'resumen' | 'tesoreria' | 'stock' | 'productos' | 'clientes' | 'rentabilidad'; label: string }[] = [
+    { id: 'resumen', label: 'Resumen' }, { id: 'tesoreria', label: 'Tesorería' }, { id: 'stock', label: 'Stock' },
+    { id: 'productos', label: 'Productos' }, { id: 'clientes', label: 'Clientes' }, { id: 'rentabilidad', label: 'Rentabilidad' },
+  ];
+  readonly tab = signal<'resumen' | 'tesoreria' | 'stock' | 'productos' | 'clientes' | 'rentabilidad'>('resumen');
+  tabReporte() { const t = this.tab(); return t === 'resumen' ? null : t; }
   readonly mesOff = signal(0);
   readonly tipo = signal<'barras' | 'linea'>('barras');
   readonly horaModo = signal<'hoy' | '7'>('hoy');
@@ -195,6 +213,13 @@ export class DashboardComponent {
   });
   readonly horasMax = computed(() => Math.max(0, ...this.horas().map((h) => h.total)));
 
+  readonly porMedio = computed(() => {
+    const colores: Record<string, string> = { Efectivo: '#1f9d63', Transferencia: '#5b5bf0', Tarjeta: '#f59e0b', 'Cuenta corriente': '#9333ea' };
+    const m = new Map<string, { total: number; n: number }>();
+    this.ventasMes().forEach((s) => { const x = m.get(s.method) ?? { total: 0, n: 0 }; x.total += s.total; x.n++; m.set(s.method, x); });
+    const max = Math.max(1, ...[...m.values()].map((v) => v.total));
+    return [...m].map(([nombre, v]) => ({ nombre, total: r2(v.total), n: v.n, color: colores[nombre] ?? '#888', pct: (v.total / max) * 100 })).sort((a, b) => b.total - a.total);
+  });
   readonly ultimosMov = computed(() => [...this.store.db().stockMoves].reverse().slice(0, 6));
 }
 

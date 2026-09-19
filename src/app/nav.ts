@@ -18,13 +18,12 @@ export const NAV: NavGroup[] = [
     title: 'Inicio',
     items: [
       { label: 'Primeros pasos', path: 'primeros-pasos', subtitle: 'Preparé lo esencial a tu ritmo.', icon: 'rocket' },
-      { label: 'Dashboard', path: 'dashboard', subtitle: 'Resumen de tu negocio.', icon: 'gauge-high' },
+      { label: 'Dashboard', path: 'dashboard', subtitle: 'Resumen de tu negocio y reportes.', icon: 'gauge-high' },
     ],
   },
   {
     title: 'Análisis',
     items: [
-      { label: 'Reportes', path: 'reportes', subtitle: 'Analizá el rendimiento de tu negocio con reportes.', icon: 'chart-line' },
       { label: 'Historial de precios', path: 'historial-precios', subtitle: 'Seguí cómo cambiaron los precios de tus productos.', icon: 'chart-simple', group: 'Historial' },
       { label: 'Historial de stock', path: 'historial-stock', subtitle: 'Revisá todos los movimientos de stock de tus productos.', icon: 'chart-simple', group: 'Historial' },
       { label: 'Ajustes de stock', path: 'ajustes-stock', subtitle: 'Revisá los ajustes masivos de stock: quién los hizo, cuándo y qué tocaron.', icon: 'sliders', group: 'Historial' },

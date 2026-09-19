@@ -14,7 +14,7 @@ describe('guías de primera visita', () => {
   });
 
   it('las pantallas principales del menú tienen guía', () => {
-    ['dashboard', 'ventas', 'stock', 'compras', 'cuentas', 'clientes', 'proveedores', 'reportes', 'ajustes'].forEach((k) => expect(GUIAS[k]).toBeDefined());
+    ['dashboard', 'ventas', 'stock', 'compras', 'cuentas', 'clientes', 'proveedores', 'ajustes'].forEach((k) => expect(GUIAS[k]).toBeDefined());
   });
 
   it('se muestra una sola vez y se puede reiniciar', () => {

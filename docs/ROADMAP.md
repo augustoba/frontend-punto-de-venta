@@ -94,3 +94,4 @@ Ver también el análisis de la segunda referencia (Ventario): `backend-punto-de
 - **F20** (2026-09-18): Dashboard (mejora #1 de `docs/MEJORAS.md`): pantalla de inicio con resumen del negocio. Ver el tablero de mejoras para el seguimiento.
 - **F21** (2026-09-18): Primeros pasos, píldora de progreso, ayuda y recorrido guiado de la caja (mejora #2 de `docs/MEJORAS.md`).
 - **F22** (2026-09-18): mejoras del POS (mejora #3): accesos rápidos, lector activo, modo Rápida, recargo, grilla con categorías y atajos F.
+- **F23** (2026-09-18): Reportes fusionados en el Dashboard como solapas (pendiente de verificar en el navegador). Sesión pausada: ver `docs/PROXIMA_SESION.md` (estado, referencias visitadas, pendientes y notas para la próxima sesión).

@@ -15,7 +15,6 @@ const BUILT: Record<string, () => Promise<any>> = {
   compras: () => import('./pages/compras/compras.component').then((m) => m.ComprasComponent),
   presupuestos: () => import('./pages/presupuestos/presupuestos.component').then((m) => m.PresupuestosComponent),
   facturas: () => import('./pages/facturas/facturas.component').then((m) => m.FacturasComponent),
-  reportes: () => import('./pages/reportes/reportes.component').then((m) => m.ReportesComponent),
   'historial-stock': () => import('./pages/historiales/historiales.component').then((m) => m.HistorialesComponent),
   'historial-precios': () => import('./pages/historiales/historiales.component').then((m) => m.HistorialesComponent),
   'ajustes-stock': () => import('./pages/historiales/historiales.component').then((m) => m.HistorialesComponent),
@@ -30,6 +29,7 @@ const BUILT: Record<string, () => Promise<any>> = {
 };
 
 export const routes: Routes = [
+  { path: 'reportes', redirectTo: 'dashboard' },   // los reportes ahora son solapas del Dashboard
   { path: 'login', loadComponent: () => import('./pages/login/login.component').then((m) => m.LoginComponent), title: 'Ingresar - Punto de venta' },
   // Caja registradora: pantalla completa, sin menú lateral (como en Envi)
   { path: 'caja', loadComponent: () => import('./pages/caja/caja.component').then((m) => m.CajaComponent), title: 'Caja registradora - Punto de venta', canActivate: [authGuard] },

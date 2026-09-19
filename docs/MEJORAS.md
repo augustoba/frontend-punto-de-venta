@@ -47,3 +47,12 @@ Estados: ⬜ pendiente · 🔄 en curso · ✅ hecho · ⏸ diferido a propósit
 | Caja: botón **Lector** visible junto al de la cámara | ✅ | 2026-09-18 | El ícono de código de barras abre el modo «esperando el lector»; la cámara tiene su propio ícono. Igual que en el alta de producto. |
 - 2026-09-18: ✅ pedidos del usuario: vuelto en el cobro y botón de lector en la caja.
 | Carrito de la caja: botones − / + de cantidad demasiado grandes (tapaban el número) | ✅ | 2026-09-18 | Ahora son botones redondos de 28 px con el número en el medio (`.qty`). |
+
+## Pedidos del usuario pendientes (sesión pausada)
+| Pedido | Estado | Notas |
+|---|---|---|
+| Reportes dentro del Dashboard (Dashboard = primera solapa; Tesorería, Stock, Productos, Clientes y Rentabilidad como solapas) | 🔄 | Hecho en código (build y 44 pruebas verdes); falta verificarlo en el navegador. Ver `docs/PROXIMA_SESION.md` §4.0. |
+| Venta por peso | ⬜ | Pedida para hacer ahora; requiere cantidades decimales en toda la cadena de stock. Ver §4.4. |
+| Todas las mejoras que faltaban (#4 a #14, #16) | ⬜ | En orden, como figura arriba. |
+| Anotar las direcciones de las páginas de referencia | ✅ | En `docs/PROXIMA_SESION.md` §1. |
+- 2026-09-18: ⏸ sesión pausada a pedido del usuario. Estado y pendientes en `docs/PROXIMA_SESION.md`. Cron de retomado cancelado.
